@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+  
+  <ListPreference     android:title="Temperature Unit"
+                      android:summary="Celsius or Ferhnahite"
+                      android:key="tempUnit"
+                      android:defaultValue="1"
+                      android:entries="@array/listTempUnitArray"
+                      android:entryValues="@array/listTempUnitValues" />
+  <ListPreference     android:title="Update Frequency"
+                      android:summary="Select Rate of Update"
+                      android:key="upFreq"
+                      android:defaultValue="3"
+                      android:entries="@array/listUpFreqArray"
+                      android:entryValues="@array/listUpFreqValues" />
+  
+</PreferenceScreen>
