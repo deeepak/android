@@ -23,9 +23,11 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -37,11 +39,11 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
 import android.widget.Toast;
-
+import 	android.os.PowerManager;
 public class EnvWidget extends AppWidgetProvider{
 	//configuration intent action
 	private static final String CONFIG_CLICKED    = "ConfigButtonClick";
-
+	
 	//we are overriding onReceive so need not to override onUpdate onDelete etc methods of
 	//AppWidgetProvider
 	@Override
@@ -68,6 +70,8 @@ public class EnvWidget extends AppWidgetProvider{
         	 context.startService(new Intent(context, UpdateService.class));
              remoteViews.setOnClickPendingIntent(R.id.button, getPendingSelfIntent(context, CONFIG_CLICKED));
              appWidgetManager.updateAppWidget(envWidget, remoteViews);
+             context.getApplicationContext().registerReceiver(this,new IntentFilter(Intent.ACTION_SCREEN_ON));
+             context.getApplicationContext().registerReceiver(this, new IntentFilter(Intent.ACTION_SCREEN_OFF));
         }
         else if("android.appwidget.action.APPWIDGET_DELETED".equals(intentAction) ||
         		"android.appwidget.action.APPWIDGET_DISABLED".equals(intentAction) )
@@ -75,6 +79,17 @@ public class EnvWidget extends AppWidgetProvider{
         	 Log.d("stop service",intent.getAction());
         	 context.stopService(new Intent(context,UpdateService.class));
         }
+        else if("android.intent.action.SCREEN_OFF".equals(intentAction))
+        {
+        	//we are stopping the service as device screen goes off
+        	//to save the battery
+        	 context.stopService(new Intent(context,UpdateService.class));
+        }
+        else if("android.intent.action.SCREEN_ON".equals(intentAction))
+        {
+        	context.startService(new Intent(context, UpdateService.class));
+        }
+
     }
 	
 	protected PendingIntent getPendingSelfIntent(Context context, String action) {
@@ -84,9 +99,6 @@ public class EnvWidget extends AppWidgetProvider{
     }
 	
 	public static class UpdateService extends Service implements SensorEventListener,EventListener{
-		
-		
-
 		// init 
 		private SensorManager sensormanager=null;
 		private Sensor temperature=null;
@@ -110,12 +122,13 @@ public class EnvWidget extends AppWidgetProvider{
         	thisWidget = new ComponentName(this, EnvWidget.class);
         	manager = AppWidgetManager.getInstance(this);
         	EnvActivity.RegisterForEvent(this);
+        	
 		}
 		@Override
 		public int onStartCommand(Intent intent, int flags, int startId) {
 			if(temperature!=null)
         	{
-        		sensormanager.registerListener(this, temperature, SensorManager.SENSOR_DELAY_NORMAL);
+        		sensormanager.registerListener(UpdateService.this, temperature, SensorManager.SENSOR_DELAY_NORMAL);
         	}
         	else
         	{
@@ -125,7 +138,7 @@ public class EnvWidget extends AppWidgetProvider{
         	}
         	if(humidity!=null)
         	{
-        		sensormanager.registerListener(this, humidity, SensorManager.SENSOR_DELAY_NORMAL);
+        		sensormanager.registerListener(UpdateService.this, humidity, SensorManager.SENSOR_DELAY_NORMAL);
         	}
         	else
         	{
@@ -141,7 +154,6 @@ public class EnvWidget extends AppWidgetProvider{
         public IBinder onBind(Intent intent) {
             return null;
         }
-       
         @Override
 		public void onDestroy() {
 			// TODO Auto-generated method stub
@@ -174,7 +186,7 @@ public class EnvWidget extends AppWidgetProvider{
 					temp=Math.round(val)+"\u2109";
 				}
 				views.setTextViewText(R.id.temp,temp);
-			}
+			} 
 			else
 			{
 				views.setTextViewText(R.id.humidity,Math.round(arg0.values[0])+"%");
@@ -210,7 +222,7 @@ public class EnvWidget extends AppWidgetProvider{
 			}
 			
 		}
-		
+		 
     }
 	
 }
