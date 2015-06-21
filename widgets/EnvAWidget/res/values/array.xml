@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+<string-array name="listTempUnitArray">
+	<item>Celsius</item>
+	<item>Frehnahite</item>
+</string-array>
+<string-array name="listTempUnitValues">
+    <item>1</item>
+    <item>2</item>
+</string-array>
+<string-array name="listUpFreqArray">
+	<item>Fast</item>
+	<item>Normal</item>
+	<item>Slow</item>
+</string-array>
+<string-array name="listUpFreqValues">
+    <item>0</item>
+    <item>3</item>
+    <item>2</item>
+</string-array>
+</resources>
