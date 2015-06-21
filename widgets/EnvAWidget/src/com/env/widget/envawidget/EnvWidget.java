@@ -84,6 +84,9 @@ public class EnvWidget extends AppWidgetProvider{
     }
 	
 	public static class UpdateService extends Service implements SensorEventListener,EventListener{
+		
+		
+
 		// init 
 		private SensorManager sensormanager=null;
 		private Sensor temperature=null;
@@ -96,9 +99,10 @@ public class EnvWidget extends AppWidgetProvider{
 		int tempUnit=1;
 		// By default SENSOR_DELAY_NORMAL (3)
 		int upFreq=3;
-        @Override
-        public void onStart(Intent intent, int startId) {
-        	SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		@Override
+		public void onCreate() {
+			super.onCreate();
+			SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         	sensormanager = (SensorManager)getSystemService(SENSOR_SERVICE);
         	temperature= sensormanager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
         	humidity= sensormanager.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY);
@@ -106,8 +110,10 @@ public class EnvWidget extends AppWidgetProvider{
         	thisWidget = new ComponentName(this, EnvWidget.class);
         	manager = AppWidgetManager.getInstance(this);
         	EnvActivity.RegisterForEvent(this);
-        	
-        	if(temperature!=null)
+		}
+		@Override
+		public int onStartCommand(Intent intent, int flags, int startId) {
+			if(temperature!=null)
         	{
         		sensormanager.registerListener(this, temperature, SensorManager.SENSOR_DELAY_NORMAL);
         	}
@@ -127,9 +133,11 @@ public class EnvWidget extends AppWidgetProvider{
         		views.setTextViewText(R.id.humidity,"NS");
      	        manager.updateAppWidget(thisWidget, views);
         	}
-        }
-        
-        @Override
+			return super.onStartCommand(intent, flags, startId);
+		}
+
+       
+		@Override
         public IBinder onBind(Intent intent) {
             return null;
         }
