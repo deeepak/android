@@ -95,7 +95,7 @@ public class EnvWidget extends AppWidgetProvider{
         {
         	if(updateService!=null)
         	{
-        		updateService.registerListener();
+        		updateService.registerListener(new Integer((PreferenceManager.getDefaultSharedPreferences(context).getString("upFreq","3"))));
         	}
         }
 
@@ -107,7 +107,7 @@ public class EnvWidget extends AppWidgetProvider{
         return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 	
-	public static class UpdateService extends Service implements SensorEventListener,EventListener{
+	public static class UpdateService extends Service implements SensorEventListener, SharedPreferences.OnSharedPreferenceChangeListener{
 		// init 
 		private SensorManager sensormanager=null;
 		private Sensor temperature=null;
@@ -132,12 +132,13 @@ public class EnvWidget extends AppWidgetProvider{
         	views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
         	thisWidget = new ComponentName(this, EnvWidget.class);
         	manager = AppWidgetManager.getInstance(this);
-        	EnvActivity.RegisterForEvent(this);
         	
 		}
 		@Override
 		public int onStartCommand(Intent intent, int flags, int startId) {
-			registerListener();
+			registerListener(SensorManager.SENSOR_DELAY_NORMAL);
+			PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+			applySettings(SP);
 			if(!isTempSensorAvailable)
 			{
 				views.setTextViewText(R.id.temp,"NS");
@@ -200,9 +201,11 @@ public class EnvWidget extends AppWidgetProvider{
 	       
 		}
 
-		@Override
-		public void settingsChanged(Settings[] type) {
+		public void applySettings(SharedPreferences arg0) {
 			
+			String tempU = arg0.getString("tempUnit","1");
+			String upF = arg0.getString("upFreq","3");
+			Settings[] type={new Settings(SType.TEMP_UNIT, new Integer(tempU)),new Settings(SType.UP_FREQ,new Integer(upF))};
 			for(int i=0; i<type.length;i++)
 			{
 				switch (type[i].getSType()) {
@@ -211,11 +214,8 @@ public class EnvWidget extends AppWidgetProvider{
 					break;
 				case UP_FREQ:
 					// De-register and Re-Register the sensors
-					//TODO cleaner way to do this to implement a runnable
-					sensormanager.unregisterListener(this, temperature);
-					sensormanager.unregisterListener(this, humidity);
-					sensormanager.registerListener(this, temperature, type[i].getVal());
-					sensormanager.registerListener(this, humidity, type[i].getVal());
+					unRegisterListener();
+					registerListener( type[i].getVal());
 					upFreq = type[i].getVal();
 					break;
 
@@ -228,21 +228,25 @@ public class EnvWidget extends AppWidgetProvider{
 			sensormanager.unregisterListener(this, temperature);
 			sensormanager.unregisterListener(this, humidity);
 		}
-		public void registerListener()
+		public void registerListener(int delay)
 		{
 			
 			if(temperature!=null)
         	{
 				isTempSensorAvailable=true;
-        		sensormanager.registerListener(UpdateService.this, temperature, SensorManager.SENSOR_DELAY_NORMAL);
+        		sensormanager.registerListener(UpdateService.this, temperature, delay);
         	}
         	if(humidity!=null)
         	{
         		isHumiditySensorAvailable = true;
-        		sensormanager.registerListener(UpdateService.this, humidity, SensorManager.SENSOR_DELAY_NORMAL);
+        		sensormanager.registerListener(UpdateService.this, humidity,delay);
         	}
 		}
-		 
+		@Override
+		public void onSharedPreferenceChanged(SharedPreferences arg0, String arg1) {
+			// TODO Auto-generated method stub
+			applySettings(arg0);
+		}
     }
 	
 }

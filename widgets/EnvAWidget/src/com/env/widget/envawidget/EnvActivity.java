@@ -25,15 +25,14 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
 
-public class EnvActivity extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class EnvActivity extends PreferenceActivity  {
 int mAppWidgetId;
-private static EventListener evntListener;
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.xml.settings);
-		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+		
 		
 	}
 	@Override
@@ -47,17 +46,5 @@ private static EventListener evntListener;
 		super.onStop();
 		
 	}
-	public static void RegisterForEvent(EventListener obj)
-	{
-		evntListener=obj;
-	}
-	@Override
-	public void onSharedPreferenceChanged(SharedPreferences arg0, String arg1) {
-		// TODO Auto-generated method stub
-		String tempUnit = arg0.getString("tempUnit","1");
-		String upFreq = arg0.getString("upFreq","3");
-		Settings[] settings={new Settings(SType.TEMP_UNIT, new Integer(tempUnit)),new Settings(SType.UP_FREQ,new Integer(upFreq))};
-		if(evntListener!=null)
-		evntListener.settingsChanged(settings);
-		}
+	
 }
