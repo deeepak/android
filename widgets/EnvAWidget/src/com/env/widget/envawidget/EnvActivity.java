@@ -45,6 +45,7 @@ private static EventListener evntListener;
 	protected void onStop() {
 		// TODO Auto-generated method stub
 		super.onStop();
+		
 	}
 	public static void RegisterForEvent(EventListener obj)
 	{

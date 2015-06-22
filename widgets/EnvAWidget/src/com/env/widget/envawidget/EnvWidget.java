@@ -19,6 +19,8 @@
  */
 package com.env.widget.envawidget;
 
+import com.env.widget.envawidget.EnvWidget.UpdateService.LocalBinder;
+
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
@@ -28,11 +30,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Binder;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -43,7 +47,8 @@ import 	android.os.PowerManager;
 public class EnvWidget extends AppWidgetProvider{
 	//configuration intent action
 	private static final String CONFIG_CLICKED    = "ConfigButtonClick";
-	
+	private UpdateService mService;
+    boolean mBound = false;
 	//we are overriding onReceive so need not to override onUpdate onDelete etc methods of
 	//AppWidgetProvider
 	@Override
@@ -67,7 +72,9 @@ public class EnvWidget extends AppWidgetProvider{
         else if("android.appwidget.action.APPWIDGET_UPDATE".equals(intentAction))
         {
         	 Log.d("start service",intent.getAction());
-        	 context.startService(new Intent(context, UpdateService.class));
+        	 
+        	 context.getApplicationContext().bindService(new Intent(context, UpdateService.class), mConnection, Context.BIND_AUTO_CREATE);
+        	 
              remoteViews.setOnClickPendingIntent(R.id.button, getPendingSelfIntent(context, CONFIG_CLICKED));
              appWidgetManager.updateAppWidget(envWidget, remoteViews);
              context.getApplicationContext().registerReceiver(this,new IntentFilter(Intent.ACTION_SCREEN_ON));
@@ -76,19 +83,29 @@ public class EnvWidget extends AppWidgetProvider{
         else if("android.appwidget.action.APPWIDGET_DELETED".equals(intentAction) ||
         		"android.appwidget.action.APPWIDGET_DISABLED".equals(intentAction) )
         {
-        	 Log.d("stop service",intent.getAction());
-        	 context.stopService(new Intent(context,UpdateService.class));
+        	 
+        	 if (mBound) {
+        		 Log.d("stop service",intent.getAction());
+        		 mService.unRegisterListener();
+                 context.getApplicationContext().unbindService(mConnection);
+                 mBound = false;
+             }
         }
         else if("android.intent.action.SCREEN_OFF".equals(intentAction))
         {
-        	//we are stopping the service as device screen goes off
+        	//we are unregistering sensor listeners
         	//to save the battery
-        	 context.stopService(new Intent(context,UpdateService.class));
+        	if (mBound) {
+        	 mService.unRegisterListener();
+        	}
         }
         else if("android.intent.action.SCREEN_ON".equals(intentAction))
         {
-        	context.startService(new Intent(context, UpdateService.class));
+        	if (mBound) {
+        	mService.registerListener();
+        	}
         }
+       
 
     }
 	
@@ -97,16 +114,39 @@ public class EnvWidget extends AppWidgetProvider{
         intent.setAction(action);
         return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
-	
+	// bind callback
+	private ServiceConnection mConnection = new ServiceConnection() {
+
+         @Override
+         public void onServiceConnected(ComponentName className,
+                 IBinder service) {
+             // We've bound to LocalService, cast the IBinder and get LocalService instance
+             LocalBinder binder = (LocalBinder) service;
+             mService = binder.getService();
+             mBound = true;
+             Log.d("service","service connexted");
+         }
+
+         @Override
+         public void onServiceDisconnected(ComponentName arg0) {
+             mBound = false;
+             Log.d("service","service disconnexted");
+             
+         }
+     };
 	public static class UpdateService extends Service implements SensorEventListener,EventListener{
 		// init 
 		private SensorManager sensormanager=null;
 		private Sensor temperature=null;
 		private Sensor humidity=null;
-		RemoteViews views = null;
-		ComponentName thisWidget = null;
-		AppWidgetManager manager =null;
-		SharedPreferences SP ;
+		private RemoteViews views = null;
+		private ComponentName thisWidget = null;
+		private AppWidgetManager manager =null;
+		private SharedPreferences SP ;
+		private IBinder mBinder = new LocalBinder();
+		boolean isTempSensorAvailable = false;
+		boolean isHumiditySensorAvailable = false;
+		
 		// By default unit is Celsius
 		int tempUnit=1;
 		// By default SENSOR_DELAY_NORMAL (3)
@@ -121,45 +161,29 @@ public class EnvWidget extends AppWidgetProvider{
         	views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
         	thisWidget = new ComponentName(this, EnvWidget.class);
         	manager = AppWidgetManager.getInstance(this);
+        	Log.d("service","oncreatecalled");
         	EnvActivity.RegisterForEvent(this);
-        	
+        	registerListener();
+			if(!isTempSensorAvailable)
+			{
+				views.setTextViewText(R.id.temp,"NS");
+			}
+			if(!isHumiditySensorAvailable)
+			{
+				views.setTextViewText(R.id.humidity,"NS");
+			}
+			manager.updateAppWidget(thisWidget, views);
 		}
-		@Override
-		public int onStartCommand(Intent intent, int flags, int startId) {
-			if(temperature!=null)
-        	{
-        		sensormanager.registerListener(UpdateService.this, temperature, SensorManager.SENSOR_DELAY_NORMAL);
-        	}
-        	else
-        	{
-        		//temperature sensor is not supported by the device 
-        		views.setTextViewText(R.id.temp,"NS");
-   	         	manager.updateAppWidget(thisWidget, views);
-        	}
-        	if(humidity!=null)
-        	{
-        		sensormanager.registerListener(UpdateService.this, humidity, SensorManager.SENSOR_DELAY_NORMAL);
-        	}
-        	else
-        	{
-        		//humidity sensor is not supported by the device
-        		views.setTextViewText(R.id.humidity,"NS");
-     	        manager.updateAppWidget(thisWidget, views);
-        	}
-			return super.onStartCommand(intent, flags, startId);
-		}
-
-       
 		@Override
         public IBinder onBind(Intent intent) {
-            return null;
+            return mBinder;
         }
         @Override
 		public void onDestroy() {
 			// TODO Auto-generated method stub
 			super.onDestroy();
-			sensormanager.unregisterListener(this, temperature);
-			sensormanager.unregisterListener(this, humidity);
+			Log.d("service","ondestroy");
+			unRegisterListener();
 		}
 
 		@Override
@@ -222,6 +246,34 @@ public class EnvWidget extends AppWidgetProvider{
 			}
 			
 		}
+		
+		public void unRegisterListener()
+		{
+			Log.d("service","unregister listeners");
+			sensormanager.unregisterListener(this, temperature);
+			sensormanager.unregisterListener(this, humidity);
+		}
+		public void registerListener()
+		{
+			
+			if(temperature!=null)
+        	{
+				isTempSensorAvailable=true;
+        		sensormanager.registerListener(UpdateService.this, temperature, SensorManager.SENSOR_DELAY_NORMAL);
+        	}
+        	if(humidity!=null)
+        	{
+        		isHumiditySensorAvailable = true;
+        		sensormanager.registerListener(UpdateService.this, humidity, SensorManager.SENSOR_DELAY_NORMAL);
+        	}
+		}
+	
+		class LocalBinder extends Binder {
+	        UpdateService getService() {
+	            // Return this instance of LocalService so clients can call public methods
+	            return UpdateService.this;
+	        }
+	    }
 		 
     }
 	
