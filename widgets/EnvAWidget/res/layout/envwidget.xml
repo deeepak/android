@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
+     android:id="@+id/widgetFrame"
     android:layout_height="fill_parent"
      android:background="@drawable/back"
     android:orientation="vertical" >
@@ -46,13 +47,6 @@
         android:textSize="25sp"
         android:text="@string/widget_loading"
          />
-<ImageView
-        android:id="@+id/button"
-        android:layout_width="35dip"
-        android:layout_height="35dip"
-        android:layout_marginTop="67dip"
-        android:layout_marginLeft="5dip"
-        android:src="@drawable/settings"/>
  
 </LinearLayout>
 </FrameLayout>

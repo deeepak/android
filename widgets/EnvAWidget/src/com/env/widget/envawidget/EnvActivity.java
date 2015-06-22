@@ -57,6 +57,7 @@ private static EventListener evntListener;
 		String tempUnit = arg0.getString("tempUnit","1");
 		String upFreq = arg0.getString("upFreq","3");
 		Settings[] settings={new Settings(SType.TEMP_UNIT, new Integer(tempUnit)),new Settings(SType.UP_FREQ,new Integer(upFreq))};
+		if(evntListener!=null)
 		evntListener.settingsChanged(settings);
 		}
 }
