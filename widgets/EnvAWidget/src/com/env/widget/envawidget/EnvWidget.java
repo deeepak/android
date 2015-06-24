@@ -57,8 +57,6 @@ public class EnvWidget extends AppWidgetProvider {
 	public void onEnabled(Context context) {
 
 		super.onEnabled(context);
-		Log.d("widget", "Onenabled");
-		Toast.makeText(context, "onEnabled", Toast.LENGTH_LONG).show();
 		context.startService(new Intent(context, UpdateService.class));
 	}
 
@@ -76,20 +74,26 @@ public class EnvWidget extends AppWidgetProvider {
 			int[] appWidgetIds) {
 
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
-		RemoteViews remoteViews = new RemoteViews(context.getPackageName(),
-				R.layout.envwidget);
-		ComponentName envWidget = new ComponentName(context, EnvWidget.class);
-		/*
-		 * we are setting a pending intent on the click so that we can start a
-		 * configuration activity
-		 */
-		remoteViews.setOnClickPendingIntent(R.id.widgetFrame,
-				getPendingSelfIntent(context, CONFIG_CLICKED));
-		/*
-		 * important: we need to fire the updateAppWidget here after the seting
-		 * the pending intent
-		 */
-		appWidgetManager.updateAppWidget(envWidget, remoteViews);
+		for(int widgetId : appWidgetIds){
+			RemoteViews remoteViews = new RemoteViews(context.getPackageName(),
+					R.layout.envwidget);
+			/*
+			 * we are setting a pending intent on the click so that we can start
+			 * a configuration activity
+			 */
+			Intent intent = new Intent(context, EnvWidget.class);
+			intent.setAction(CONFIG_CLICKED);
+			
+			remoteViews.setOnClickPendingIntent(R.id.widgetFrame,
+					PendingIntent.getBroadcast(context, 0, intent,
+							PendingIntent.FLAG_UPDATE_CURRENT));
+			/*
+			 * important: we need to fire the updateAppWidget here after the
+			 * setting the pending intent
+			 */
+
+			appWidgetManager.updateAppWidget(widgetId, remoteViews);
+		}
 	}
 
 	@Override
@@ -119,13 +123,6 @@ public class EnvWidget extends AppWidgetProvider {
 			context.startActivity(intent1);
 		}
 
-	}
-
-	protected PendingIntent getPendingSelfIntent(Context context, String action) {
-		Intent intent = new Intent(context, EnvWidget.class);
-		intent.setAction(action);
-		return PendingIntent.getBroadcast(context, 0, intent,
-				PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
 	public static class UpdateService extends Service implements
@@ -231,7 +228,12 @@ public class EnvWidget extends AppWidgetProvider {
 					views.setTextViewText(R.id.humidity,
 							Math.round(arg0.values[0]) + "%");
 				}
-
+				Intent intent = new Intent(this, EnvWidget.class);
+				intent.setAction(CONFIG_CLICKED);
+				
+				views.setOnClickPendingIntent(R.id.widgetFrame,
+						PendingIntent.getBroadcast(this, 0, intent,
+								PendingIntent.FLAG_UPDATE_CURRENT));
 				manager.updateAppWidget(widgetId, views);
 			}
 		}
@@ -291,7 +293,7 @@ public class EnvWidget extends AppWidgetProvider {
 			public void onReceive(Context context, Intent intent) {
 				String intentAction = intent.getAction();
 				if ("android.intent.action.SCREEN_OFF".equals(intentAction)) {
-					// we are stopping the service as device screen goes off
+					// we are unregistering the sensors as device screen goes off
 					// to save the battery
 					unRegisterListener();
 				} else if ("android.intent.action.SCREEN_ON"
