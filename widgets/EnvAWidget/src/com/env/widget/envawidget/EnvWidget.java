@@ -29,6 +29,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -83,19 +88,17 @@ public class EnvWidget extends AppWidgetProvider {
 			 */
 			Intent intent = new Intent(context, EnvWidget.class);
 			intent.setAction(CONFIG_CLICKED);
-			
 			remoteViews.setOnClickPendingIntent(R.id.widgetFrame,
 					PendingIntent.getBroadcast(context, 0, intent,
 							PendingIntent.FLAG_UPDATE_CURRENT));
 			/*
-			 * important: we need to fire the updateAppWidget here after the
+			 * important: we need to fire the updateAppWidget here after
 			 * setting the pending intent
 			 */
-
 			appWidgetManager.updateAppWidget(widgetId, remoteViews);
 		}
 	}
-
+	
 	@Override
 	public void onDisabled(Context context) {
 
@@ -143,11 +146,10 @@ public class EnvWidget extends AppWidgetProvider {
 		RemoteViews views = null;
 		ComponentName thisWidget = null;
 		AppWidgetManager manager = null;
-
+		Context ctx ;
 		@Override
 		public void onCreate() {
 			super.onCreate();
-			Log.d("oncreate", "cretae");
 			SP = PreferenceManager
 					.getDefaultSharedPreferences(getBaseContext());
 			sensormanager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -173,6 +175,7 @@ public class EnvWidget extends AppWidgetProvider {
 			PreferenceManager.getDefaultSharedPreferences(this)
 					.registerOnSharedPreferenceChangeListener(this);
 			applySettings(SP);
+			ctx=this;
 			int[] widgetIds = manager.getAppWidgetIds(thisWidget);
 			for (int widgetId : widgetIds) {
 				views = new RemoteViews(this.getPackageName(),
@@ -214,6 +217,8 @@ public class EnvWidget extends AppWidgetProvider {
 			for (int widgetId : widgetIds) {
 				views = new RemoteViews(this.getPackageName(),
 						R.layout.envwidget);
+				buildUpdate(this,views,getString(R.string.thermicon),R.id.tempIconView);
+				buildUpdate(this,views,getString(R.string.humidityicon),R.id.humidityIconView);
 				if (arg0.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE) {
 					double val = arg0.values[0];
 					String temp = "";
@@ -305,6 +310,21 @@ public class EnvWidget extends AppWidgetProvider {
 				}
 			}
 		};
+		public static void buildUpdate(Context context,RemoteViews views,String text,int viewId)
+		{
+		    Bitmap myBitmap = Bitmap.createBitmap(100, 220, Bitmap.Config.ARGB_4444);
+		    Canvas myCanvas = new Canvas(myBitmap);
+		    Paint paint = new Paint();
+		    Typeface clock = Typeface.createFromAsset(context.getAssets(),"fonts/weather.ttf");
+		    paint.setAntiAlias(true);
+		    paint.setSubpixelText(true);
+		    paint.setTypeface(clock);
+		    paint.setStyle(Paint.Style.FILL);
+		    paint.setColor(Color.WHITE);
+		    paint.setTextSize(200);
+		    myCanvas.drawText(text, 10, 215, paint);
+		    views.setImageViewBitmap(viewId, myBitmap);
+		}
 	}
 
 }

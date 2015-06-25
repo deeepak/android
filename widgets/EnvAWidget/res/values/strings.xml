@@ -6,5 +6,16 @@
     <string name="action_settings">Settings</string>
      <string name="widget_loading">0</string>
      <string name="back_image">0</string>
-
+    <string name="temperature">Temperature</string>
+    <string name="hot">&#xf00d;</string>
+    <string name="cool">&#xf02e;</string>
+     
+    <string name="thermicon">&#xf055;</string>
+    <string name="humidityicon">&#xf04e;</string>
+    <string name="humidity">Humidity</string>
+    <string name="celsius">&#xf03c;</string>
+    <string name="frahnhite">&#xf045;</string>
+    <string name="weather_snowy">&#xf01b;</string>
+    <string name="weather_thunder">&#xf01e;</string>
+    <string name="weather_drizzle">&#xf01c;</string>
 </resources>

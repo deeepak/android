@@ -14,4 +14,5 @@
                       android:entries="@array/listUpFreqArray"
                       android:entryValues="@array/listUpFreqValues" />
   
+ 
 </PreferenceScreen>
