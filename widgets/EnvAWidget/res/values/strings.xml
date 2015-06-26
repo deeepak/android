@@ -12,6 +12,13 @@
      
     <string name="thermicon">&#xf055;</string>
     <string name="humidityicon">&#xf04e;</string>
+    <string name="settingsicon">&#xe995;</string>
+    
+   <string name="happy">&#xe9df;</string>
+    <string name="smile">&#xe9e1;</string>
+    <string name="sad">&#xe9e5;</string>
+    <string name="neutral">&#xe9f7;</string>
+    
     <string name="humidity">Humidity</string>
     <string name="celsius">&#xf03c;</string>
     <string name="frahnhite">&#xf045;</string>

@@ -88,13 +88,23 @@ public class EnvWidget extends AppWidgetProvider {
 			 */
 			Intent intent = new Intent(context, EnvWidget.class);
 			intent.setAction(CONFIG_CLICKED);
-			remoteViews.setOnClickPendingIntent(R.id.widgetFrame,
+			remoteViews.setOnClickPendingIntent(R.id.settingsBtnView,
 					PendingIntent.getBroadcast(context, 0, intent,
 							PendingIntent.FLAG_UPDATE_CURRENT));
 			/*
 			 * important: we need to fire the updateAppWidget here after
 			 * setting the pending intent
 			 */
+			UpdateService.buildUpdate(context, remoteViews,
+					context.getString(R.string.thermicon), R.id.tempIconView,
+					100, 220, 10, 215, 200,Color.WHITE);
+			UpdateService.buildUpdate(context, remoteViews,
+					context.getString(R.string.humidityicon),
+					R.id.humidityIconView, 100, 220, 10, 215, 200,Color.WHITE);
+			UpdateService.buildUpdate(context, remoteViews,
+					context.getString(R.string.settingsicon),
+					R.id.settingsBtnView, 200, 230, 0, 180, 170,Color.GRAY);
+			
 			appWidgetManager.updateAppWidget(widgetId, remoteViews);
 		}
 	}
@@ -120,6 +130,7 @@ public class EnvWidget extends AppWidgetProvider {
 			Intent intent1 = new Intent(context, EnvActivity.class);
 			// need to set FLAG_ACTIVITY_NEW_TASK as we are starting an activity
 			// outside of an activity
+			
 			intent1.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
 					| Intent.FLAG_ACTIVITY_CLEAR_TOP
 					| Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -212,33 +223,63 @@ public class EnvWidget extends AppWidgetProvider {
 
 		@Override
 		public void onSensorChanged(SensorEvent arg0) {
-
+			
 			int[] widgetIds = manager.getAppWidgetIds(thisWidget);
 			for (int widgetId : widgetIds) {
 				views = new RemoteViews(this.getPackageName(),
 						R.layout.envwidget);
-				buildUpdate(this,views,getString(R.string.thermicon),R.id.tempIconView);
-				buildUpdate(this,views,getString(R.string.humidityicon),R.id.humidityIconView);
+				//buildUpdate(this,views,getString(R.string.thermicon),R.id.tempIconView);
+				//buildUpdate(this,views,getString(R.string.humidityicon),R.id.humidityIconView);
+				int temperature=0;
+				int humidity=0;
 				if (arg0.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE) {
 					double val = arg0.values[0];
 					String temp = "";
 					if (tempUnit == 1) {
-						temp = Math.round(val) + "\u2103";
+						temperature = (int)Math.round(val);
+						temp = temperature + "\u2103";
 					} else {
 						val = val * 1.8000 + 32.00;
 						temp = Math.round(val) + "\u2109";
 					}
 					views.setTextViewText(R.id.temp, temp);
 				} else {
+					humidity=(int)Math.round(arg0.values[0]);
 					views.setTextViewText(R.id.humidity,
-							Math.round(arg0.values[0]) + "%");
+							humidity+ "%");
 				}
+				
+				if(temperature>23 && temperature <26)
+				{
+					//env is good
+					buildUpdate(this,views,
+							getString(R.string.smile), R.id.moodView,
+							185, 230, 10, 205, 155,Color.WHITE);
+					views.setTextViewText(R.id.moodString, "Good!");
+					
+				}
+				else if(temperature > 26 && temperature <30)
+				{
+					buildUpdate(this,views,
+							getString(R.string.neutral), R.id.moodView,
+							185, 230, 10, 205, 155,Color.WHITE);
+					views.setTextViewText(R.id.moodString, "Ok!");
+				}
+				else if(temperature > 30)
+				{
+					buildUpdate(this,views,
+							getString(R.string.sad), R.id.moodView,
+							185, 230, 10, 205, 155,Color.WHITE);
+					views.setTextViewText(R.id.moodString, "Hot!");
+				}
+				
 				Intent intent = new Intent(this, EnvWidget.class);
 				intent.setAction(CONFIG_CLICKED);
 				
-				views.setOnClickPendingIntent(R.id.widgetFrame,
+				views.setOnClickPendingIntent(R.id.settingsBtnView,
 						PendingIntent.getBroadcast(this, 0, intent,
 								PendingIntent.FLAG_UPDATE_CURRENT));
+				
 				manager.updateAppWidget(widgetId, views);
 			}
 		}
@@ -310,20 +351,23 @@ public class EnvWidget extends AppWidgetProvider {
 				}
 			}
 		};
-		public static void buildUpdate(Context context,RemoteViews views,String text,int viewId)
-		{
-		    Bitmap myBitmap = Bitmap.createBitmap(100, 220, Bitmap.Config.ARGB_4444);
-		    Canvas myCanvas = new Canvas(myBitmap);
-		    Paint paint = new Paint();
-		    Typeface clock = Typeface.createFromAsset(context.getAssets(),"fonts/weather.ttf");
-		    paint.setAntiAlias(true);
-		    paint.setSubpixelText(true);
-		    paint.setTypeface(clock);
-		    paint.setStyle(Paint.Style.FILL);
-		    paint.setColor(Color.WHITE);
-		    paint.setTextSize(200);
-		    myCanvas.drawText(text, 10, 215, paint);
-		    views.setImageViewBitmap(viewId, myBitmap);
+
+		public static void buildUpdate(Context context, RemoteViews views,
+				String text, int viewId,int w1,int h1,int x,int y,int size,int color) {
+			Bitmap myBitmap = Bitmap.createBitmap(w1, h1,
+					Bitmap.Config.ARGB_4444);
+			Canvas myCanvas = new Canvas(myBitmap);
+			Paint paint = new Paint();
+			Typeface clock = Typeface.createFromAsset(context.getAssets(),
+					"fonts/weather.ttf");
+			paint.setAntiAlias(true);
+			paint.setSubpixelText(true);
+			paint.setTypeface(clock);
+			paint.setStyle(Paint.Style.FILL);
+			paint.setColor(color);
+			paint.setTextSize(size);
+			myCanvas.drawText(text, x, y, paint);
+			views.setImageViewBitmap(viewId, myBitmap);
 		}
 	}
 

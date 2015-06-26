@@ -25,6 +25,7 @@ public class Settings {
 	
 	public Settings(SType sType,int val)
 	{
+
 		this.sType=sType;
 		this.val=val;
 	}
