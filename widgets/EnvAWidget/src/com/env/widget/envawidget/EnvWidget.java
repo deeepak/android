@@ -264,6 +264,7 @@ public class EnvWidget extends AppWidgetProvider {
 							getString(R.string.neutral), R.id.moodView,
 							185, 230, 10, 205, 155,Color.WHITE);
 					views.setTextViewText(R.id.moodString, "Ok!");
+					
 				}
 				else if(temperature > 30)
 				{

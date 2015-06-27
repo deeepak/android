@@ -30,7 +30,7 @@
          <!-- Service to perform web API queries -->
         <service android:name=".EnvWidget$UpdateService" />
         
-        <activity android:label="@string/app_name" android:name="EnvActivity"  android:theme="@android:style/Theme.Dialog" >
+        <activity android:label="@string/app_name" android:name="EnvActivity"  android:theme="@android:style/Theme.Dialog" android:excludeFromRecents="true" >
             <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
     </intent-filter>

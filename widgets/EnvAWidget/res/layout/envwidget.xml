@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/dropshadow"
-    android:orientation="vertical" >
+    android:padding="4dip"
+    >
 
     <ImageView
         android:id="@+id/tempIconView"
@@ -41,7 +42,7 @@
         android:id="@+id/humidityIconView"
        android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
-    	android:layout_marginLeft="5dip"
+    	android:layout_marginLeft="20dip"
     	android:layout_marginRight="5dip"
     android:layout_toRightOf="@+id/temp"
        />
@@ -55,7 +56,8 @@
 		android:layout_marginLeft="5dip"
     	android:layout_marginRight="5dip"
 		android:layout_below="@+id/humidityIconView"
-		android:layout_toRightOf="@+id/tempString"
+		 android:layout_alignStart="@+id/humidityIconView"
+		  android:layout_alignEnd="@+id/humidity"
         android:text="@string/humidity"
          />
 <TextView
@@ -69,12 +71,12 @@
         android:textSize="25sp"
         android:text="@string/widget_loading"
          />
-  
+ 
   <ImageView
         android:id="@+id/moodView"
         android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
-    	android:layout_marginLeft="5dip"
+    	android:layout_marginLeft="20dip"
     	android:layout_toRightOf="@+id/humidity"
     	android:layout_marginRight="5dip"
         />
@@ -84,13 +86,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dip"
         android:gravity="center"
-        android:layout_marginLeft="10dip"
-    	android:layout_marginRight="5dip"
         android:layout_toRightOf="@+id/humidityString"
-        android:layout_alignLeft="@+id/moodView"
+        android:layout_alignStart="@+id/moodView"
+    	android:layout_alignEnd="@+id/moodView"
         android:layout_below="@+id/moodView"
         android:textSize="15sp"
          />
+ 
   <ImageView
         android:id="@+id/settingsBtnView"
         android:layout_width="wrap_content"
