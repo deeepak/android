@@ -19,6 +19,11 @@
  */
 package com.env.widget.envawidget;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
@@ -40,6 +45,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
@@ -100,7 +106,7 @@ public class EnvWidget extends AppWidgetProvider {
 					100, 220, 10, 215, 200,Color.WHITE);
 			UpdateService.buildUpdate(context, remoteViews,
 					context.getString(R.string.humidityicon),
-					R.id.humidityIconView, 100, 220, 10, 215, 200,Color.WHITE);
+					R.id.humidityIconView, 110, 220, 10, 215, 200,Color.WHITE);
 			UpdateService.buildUpdate(context, remoteViews,
 					context.getString(R.string.settingsicon),
 					R.id.settingsBtnView, 200, 230, 0, 180, 170,Color.GRAY);
@@ -223,20 +229,17 @@ public class EnvWidget extends AppWidgetProvider {
 
 		@Override
 		public void onSensorChanged(SensorEvent arg0) {
-			
-			int[] widgetIds = manager.getAppWidgetIds(thisWidget);
-			for (int widgetId : widgetIds) {
+			int[] appWidgetIds = manager.getAppWidgetIds(thisWidget);
+			for(int widgetIds :appWidgetIds){
 				views = new RemoteViews(this.getPackageName(),
 						R.layout.envwidget);
-				//buildUpdate(this,views,getString(R.string.thermicon),R.id.tempIconView);
-				//buildUpdate(this,views,getString(R.string.humidityicon),R.id.humidityIconView);
-				int temperature=0;
-				int humidity=0;
+				int temperature = 0;
+				int humidity = 0;
 				if (arg0.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE) {
 					double val = arg0.values[0];
 					String temp = "";
 					if (tempUnit == 1) {
-						temperature = (int)Math.round(val);
+						temperature = (int) Math.round(val);
 						temp = temperature + "\u2103";
 					} else {
 						val = val * 1.8000 + 32.00;
@@ -244,45 +247,40 @@ public class EnvWidget extends AppWidgetProvider {
 					}
 					views.setTextViewText(R.id.temp, temp);
 				} else {
-					humidity=(int)Math.round(arg0.values[0]);
-					views.setTextViewText(R.id.humidity,
-							humidity+ "%");
+					humidity = (int) Math.round(arg0.values[0]);
+					views.setTextViewText(R.id.humidity, humidity + "%");
 				}
-				
-				if(temperature>23 && temperature <26)
-				{
-					//env is good
-					buildUpdate(this,views,
-							getString(R.string.smile), R.id.moodView,
-							185, 230, 10, 205, 155,Color.WHITE);
+
+				if (temperature > 23 && temperature < 26) {
+					// env is good
+					buildUpdate(this, views, getString(R.string.smile),
+							R.id.moodView, 185, 230, 10, 205, 155, Color.WHITE);
 					views.setTextViewText(R.id.moodString, "Good!");
-					
-				}
-				else if(temperature > 26 && temperature <30)
-				{
-					buildUpdate(this,views,
-							getString(R.string.neutral), R.id.moodView,
-							185, 230, 10, 205, 155,Color.WHITE);
+
+				} else if (temperature >= 26 && temperature < 30) {
+					buildUpdate(this, views, getString(R.string.neutral),
+							R.id.moodView, 185, 230, 10, 205, 155, Color.WHITE);
 					views.setTextViewText(R.id.moodString, "Ok!");
-					
-				}
-				else if(temperature > 30)
-				{
-					buildUpdate(this,views,
-							getString(R.string.sad), R.id.moodView,
-							185, 230, 10, 205, 155,Color.WHITE);
+
+				} else if (temperature >= 30) {
+					buildUpdate(this, views, getString(R.string.sad),
+							R.id.moodView, 185, 230, 10, 205, 155, Color.WHITE);
 					views.setTextViewText(R.id.moodString, "Hot!");
 				}
-				
+
 				Intent intent = new Intent(this, EnvWidget.class);
 				intent.setAction(CONFIG_CLICKED);
-				
+
 				views.setOnClickPendingIntent(R.id.settingsBtnView,
 						PendingIntent.getBroadcast(this, 0, intent,
 								PendingIntent.FLAG_UPDATE_CURRENT));
-				
-				manager.updateAppWidget(widgetId, views);
+				views.setTextViewText(R.id.lastUpdated, DateFormat
+						.getDateTimeInstance().format(new Date()));
+				// textView is the TextView view that should display it
+
+				manager.updateAppWidget(widgetIds, views);
 			}
+
 		}
 
 		public void applySettings(SharedPreferences arg0) {
@@ -367,6 +365,7 @@ public class EnvWidget extends AppWidgetProvider {
 			paint.setStyle(Paint.Style.FILL);
 			paint.setColor(color);
 			paint.setTextSize(size);
+			paint.setShadowLayer(5.0f, 10.0f, 10.0f, Color.BLACK);
 			myCanvas.drawText(text, x, y, paint);
 			views.setImageViewBitmap(viewId, myBitmap);
 		}

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetFrame"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
     android:background="@drawable/dropshadow"
-    android:padding="4dip"
+    android:padding="2dip"
     >
 
     <ImageView
@@ -100,7 +100,14 @@
     	android:layout_marginLeft="5dip"
     	android:layout_below="@+id/humidityIconView"
     	android:layout_alignParentRight="true"
-    
         />
+  <TextView
+        android:id="@+id/lastUpdated"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_below="@+id/tempString"
+        android:textSize="8sp"
+         />
 </RelativeLayout>
  
