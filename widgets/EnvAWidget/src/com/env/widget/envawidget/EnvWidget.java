@@ -103,13 +103,13 @@ public class EnvWidget extends AppWidgetProvider {
 			 */
 			UpdateService.buildUpdate(context, remoteViews,
 					context.getString(R.string.thermicon), R.id.tempIconView,
-					100, 220, 10, 215, 200,Color.WHITE);
+					100, 200, 10, 215, 200,Color.WHITE);
 			UpdateService.buildUpdate(context, remoteViews,
 					context.getString(R.string.humidityicon),
-					R.id.humidityIconView, 110, 220, 10, 215, 200,Color.WHITE);
+					R.id.humidityIconView, 110, 200, 10, 215, 200,Color.WHITE);
 			UpdateService.buildUpdate(context, remoteViews,
 					context.getString(R.string.settingsicon),
-					R.id.settingsBtnView, 200, 230, 0, 180, 170,Color.GRAY);
+					R.id.settingsBtnView, 150, 230, 0, 180, 150,Color.GRAY);
 			
 			appWidgetManager.updateAppWidget(widgetId, remoteViews);
 		}
@@ -149,21 +149,30 @@ public class EnvWidget extends AppWidgetProvider {
 			SensorEventListener,
 			SharedPreferences.OnSharedPreferenceChangeListener {
 		// init
+		private final String dCel ="\u2103";
+		private final String dFrahn ="\u2109";
 		private SensorManager sensormanager = null;
 		private Sensor temperature = null;
 		private Sensor humidity = null;
-
+		private 
 		SharedPreferences SP;
-		boolean isTempSensorAvailable = false;
-		boolean isHumiditySensorAvailable = false;
+		private boolean isTempSensorAvailable = false;
+		private boolean isHumiditySensorAvailable = false;
 		// By default unit is Celsius
-		int tempUnit = 1;
+		private int tempUnit = 1;
 		// By default SENSOR_DELAY_NORMAL (3)
-		int upFreq = 3;
-		RemoteViews views = null;
-		ComponentName thisWidget = null;
-		AppWidgetManager manager = null;
-		Context ctx ;
+		private int upFreq = 3;
+		private RemoteViews views = null;
+		private ComponentName thisWidget = null;
+		private AppWidgetManager manager = null;
+		private Context ctx ;
+		private double tempVal=0;
+		private double humidityVal=0;
+		private double feelsLike=0;
+		private  double[] HIConstants={-42.379,2.04901523,10.14333127,-0.22475541,
+				-0.00683783,-0.05481717,0.00122874,0.00085282,-0.00000199};
+		boolean isSettingChanged =false;
+		
 		@Override
 		public void onCreate() {
 			super.onCreate();
@@ -230,55 +239,83 @@ public class EnvWidget extends AppWidgetProvider {
 		@Override
 		public void onSensorChanged(SensorEvent arg0) {
 			int[] appWidgetIds = manager.getAppWidgetIds(thisWidget);
+			views = new RemoteViews(this.getPackageName(),
+					R.layout.envwidget);
 			for(int widgetIds :appWidgetIds){
-				views = new RemoteViews(this.getPackageName(),
-						R.layout.envwidget);
-				int temperature = 0;
-				int humidity = 0;
+				
+				double curTempVal = 0;
+				double curHumidityVal = 0;
+				boolean updateTempFlag=false;
+				boolean updateHumFlag=false;
+				
 				if (arg0.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE) {
-					double val = arg0.values[0];
-					String temp = "";
-					if (tempUnit == 1) {
-						temperature = (int) Math.round(val);
-						temp = temperature + "\u2103";
-					} else {
-						val = val * 1.8000 + 32.00;
-						temp = Math.round(val) + "\u2109";
+					curTempVal = arg0.values[0];
+					if((int)tempVal!= (int)curTempVal ){
+						tempVal = curTempVal;
+						updateTempFlag=true;
 					}
-					views.setTextViewText(R.id.temp, temp);
 				} else {
-					humidity = (int) Math.round(arg0.values[0]);
-					views.setTextViewText(R.id.humidity, humidity + "%");
+					curHumidityVal = arg0.values[0];
+					if((int)humidityVal != (int)curHumidityVal){
+						humidityVal = curHumidityVal;
+						updateHumFlag=true;
+					}
 				}
+				
+				/* we should update only when there is a change
+				 * 
+				 */
+				if (updateTempFlag || updateHumFlag) {
+					
+					feelsLike = calculateHI(curTempVal  * 1.8000 + 32.00,curHumidityVal);
+					
+					if (feelsLike > 23 && feelsLike < 26) {
+						// env is good
+						buildUpdate(this, views, getString(R.string.smile),
+								R.id.moodView, 185, 210, 10, 200, 150,
+								Color.WHITE);
 
-				if (temperature > 23 && temperature < 26) {
-					// env is good
-					buildUpdate(this, views, getString(R.string.smile),
-							R.id.moodView, 185, 230, 10, 205, 155, Color.WHITE);
-					views.setTextViewText(R.id.moodString, "Good!");
+					} else if (feelsLike >= 26 && feelsLike< 30) {
+						buildUpdate(this, views, getString(R.string.neutral),
+								R.id.moodView, 185, 210, 10, 200, 150,
+								Color.WHITE);
 
-				} else if (temperature >= 26 && temperature < 30) {
-					buildUpdate(this, views, getString(R.string.neutral),
-							R.id.moodView, 185, 230, 10, 205, 155, Color.WHITE);
-					views.setTextViewText(R.id.moodString, "Ok!");
+					} else if (feelsLike >= 30) {
+						buildUpdate(this, views, getString(R.string.sad),
+								R.id.moodView, 185, 210, 10, 200, 150,
+								Color.WHITE);
+					}
+					if (updateTempFlag) {
+						if (tempUnit == 1) {
+							views.setTextViewText(R.id.temp,
+									(int) Math.round(curTempVal) + dCel);
+							views.setTextViewText(R.id.moodString,"Feels: "+
+									(int) Math.round(feelsLike) + dCel);
+						} else {
+							views.setTextViewText(
+									R.id.temp,
+									(int) Math
+											.round(curTempVal * 1.8000 + 32.00)
+											+ dFrahn);
+							views.setTextViewText(R.id.moodString,"Feels: "+
+									(int) Math.round(feelsLike* 1.8000 + 32.00) + dFrahn);
+						}
 
-				} else if (temperature >= 30) {
-					buildUpdate(this, views, getString(R.string.sad),
-							R.id.moodView, 185, 230, 10, 205, 155, Color.WHITE);
-					views.setTextViewText(R.id.moodString, "Hot!");
+					}
+					if(updateHumFlag){
+						
+						views.setTextViewText(R.id.humidity, (int)Math.round(curHumidityVal)+ "%");
+					}
+					Intent intent = new Intent(this, EnvWidget.class);
+					intent.setAction(CONFIG_CLICKED);
+					views.setOnClickPendingIntent(R.id.settingsBtnView,
+							PendingIntent.getBroadcast(this, 0, intent,
+									PendingIntent.FLAG_UPDATE_CURRENT));
+					
+					views.setTextViewText(R.id.lastUpdated, DateFormat
+							.getDateTimeInstance().format(new Date()));
+					manager.partiallyUpdateAppWidget(widgetIds, views);
 				}
-
-				Intent intent = new Intent(this, EnvWidget.class);
-				intent.setAction(CONFIG_CLICKED);
-
-				views.setOnClickPendingIntent(R.id.settingsBtnView,
-						PendingIntent.getBroadcast(this, 0, intent,
-								PendingIntent.FLAG_UPDATE_CURRENT));
-				views.setTextViewText(R.id.lastUpdated, DateFormat
-						.getDateTimeInstance().format(new Date()));
-				// textView is the TextView view that should display it
-
-				manager.updateAppWidget(widgetIds, views);
 			}
 
 		}
@@ -303,6 +340,26 @@ public class EnvWidget extends AppWidgetProvider {
 					break;
 
 				}
+			}
+			int[] appWidgetIds = manager.getAppWidgetIds(thisWidget);
+			views = new RemoteViews(this.getPackageName(),
+					R.layout.envwidget);
+			for(int widgetIds :appWidgetIds){
+				if (tempUnit == 1) {
+					views.setTextViewText(R.id.temp,
+							(int) Math.round(tempVal) + dCel);
+					views.setTextViewText(R.id.moodString,"Feels: "+
+							(int) Math.round(feelsLike) + dCel);
+				} else {
+					views.setTextViewText(
+							R.id.temp,
+							(int) Math
+									.round(tempVal * 1.8000 + 32.00)
+									+ dFrahn);
+					views.setTextViewText(R.id.moodString,"Feels: "+
+							(int) Math.round(feelsLike* 1.8000 + 32.00) + dFrahn);
+				}
+				manager.partiallyUpdateAppWidget(widgetIds, views);
 			}
 
 		}
@@ -368,6 +425,20 @@ public class EnvWidget extends AppWidgetProvider {
 			paint.setShadowLayer(5.0f, 10.0f, 10.0f, Color.BLACK);
 			myCanvas.drawText(text, x, y, paint);
 			views.setImageViewBitmap(viewId, myBitmap);
+		}
+		private double calculateHI(double temp,double humidity){
+			double heatIndex = 0.0;
+			heatIndex = HIConstants[0]+ 
+						HIConstants[1]*temp+
+						HIConstants[2]*humidity+
+						HIConstants[3]*temp*humidity+
+						HIConstants[4]*temp*temp+
+						(HIConstants[5]*humidity)*humidity+
+						(HIConstants[6]*temp*temp)*humidity+
+						(HIConstants[7]*temp*humidity)*humidity+
+						(HIConstants[8]*temp*temp)*humidity*humidity;
+			heatIndex = (heatIndex-32.00)/1.800;
+			return heatIndex;
 		}
 	}
 

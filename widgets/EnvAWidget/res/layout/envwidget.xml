@@ -20,9 +20,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dip"
         android:gravity="center"
-		android:textSize="15sp"
-    	android:layout_marginRight="5dip"
+		android:textSize="12sp"
 		android:layout_below="@+id/tempIconView"
+		android:layout_alignStart="@+id/tempIconView"
 		android:layout_toLeftOf="@+id/humidityIconView"
         android:text="@string/temperature"
          />
@@ -52,12 +52,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dip"
         android:gravity="center"
-		android:textSize="15sp"
-		android:layout_marginLeft="5dip"
-    	android:layout_marginRight="5dip"
+		android:textSize="12sp"
 		android:layout_below="@+id/humidityIconView"
-		 android:layout_alignStart="@+id/humidityIconView"
-		  android:layout_alignEnd="@+id/humidity"
+		android:layout_alignStart="@+id/humidityIconView"
+		android:layout_alignEnd="@+id/humidity"
         android:text="@string/humidity"
          />
 <TextView
@@ -90,7 +88,7 @@
         android:layout_alignStart="@+id/moodView"
     	android:layout_alignEnd="@+id/moodView"
         android:layout_below="@+id/moodView"
-        android:textSize="15sp"
+        android:textSize="12sp"
          />
  
   <ImageView
