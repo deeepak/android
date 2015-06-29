@@ -13,6 +13,7 @@
     	android:layout_height="wrap_content"
     	android:layout_marginLeft="5dip"
     	android:layout_marginRight="5dip"
+    	android:layout_alignParentTop="true"
         />
  <TextView
      android:id="@+id/tempString"
@@ -23,17 +24,16 @@
 		android:textSize="12sp"
 		android:layout_below="@+id/tempIconView"
 		android:layout_alignStart="@+id/tempIconView"
-		android:layout_toLeftOf="@+id/humidityIconView"
         android:text="@string/temperature"
          />
     <TextView
         android:id="@+id/temp"
         android:layout_width="wrap_content" 
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dip"
-        android:padding="4dip"
+        android:padding="2dip"
+        android:layout_marginTop="2dip"
         android:gravity="center"
-		android:textSize="25sp"
+		android:textSize="18sp"
 		android:layout_toRightOf="@+id/tempIconView"
         android:text="@string/widget_loading"
          />
@@ -41,8 +41,9 @@
 <ImageView
         android:id="@+id/humidityIconView"
        android:layout_width="wrap_content"
+       android:layout_alignParentTop="true"
     	android:layout_height="wrap_content"
-    	android:layout_marginLeft="20dip"
+    	android:layout_marginLeft="10dip"
     	android:layout_marginRight="5dip"
     android:layout_toRightOf="@+id/temp"
        />
@@ -62,20 +63,51 @@
         android:id="@+id/humidity"
         android:layout_width="wrap_content" 
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dip"
-        android:padding="4dip"
+        android:padding="2dip"
+        android:layout_marginTop="2dip"
         android:gravity="center"
         android:layout_toRightOf="@+id/humidityIconView"
-        android:textSize="25sp"
+        android:textSize="18sp"
         android:text="@string/widget_loading"
          />
- 
+ <ImageView
+        android:id="@+id/dewPointIconView"
+       android:layout_width="wrap_content"
+       android:layout_alignParentTop="true"
+    	android:layout_height="wrap_content"
+    	android:layout_marginLeft="10dip"
+    	android:layout_marginRight="5dip"
+    android:layout_toRightOf="@+id/humidity"
+       />
+<TextView
+      android:id="@+id/dewPointString"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dip"
+        android:gravity="center"
+		android:textSize="12sp"
+		android:layout_below="@+id/dewPointIconView"
+		android:layout_alignStart="@+id/dewPointIconView"
+		android:layout_alignEnd="@+id/dewPoint"
+        android:text="@string/dewpoint"
+         />
+<TextView
+        android:id="@+id/dewPoint"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:padding="2dip"
+        android:layout_marginTop="2dip"
+        android:gravity="center"
+        android:layout_toRightOf="@+id/dewPointIconView"
+        android:textSize="18sp"
+        android:text="@string/widget_loading"
+         />
   <ImageView
         android:id="@+id/moodView"
         android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
-    	android:layout_marginLeft="20dip"
-    	android:layout_toRightOf="@+id/humidity"
+    	android:layout_marginLeft="10dip"
+    	android:layout_toRightOf="@+id/dewPoint"
     	android:layout_marginRight="5dip"
         />
   <TextView
@@ -84,7 +116,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dip"
         android:gravity="center"
-        android:layout_toRightOf="@+id/humidityString"
+        android:layout_toRightOf="@+id/dewPointString"
         android:layout_alignStart="@+id/moodView"
     	android:layout_alignEnd="@+id/moodView"
         android:layout_below="@+id/moodView"
@@ -96,16 +128,17 @@
         android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
     	android:layout_marginLeft="5dip"
-    	android:layout_below="@+id/humidityIconView"
     	android:layout_alignParentRight="true"
+    	android:layout_alignParentBottom="true"
         />
   <TextView
         android:id="@+id/lastUpdated"
         android:layout_width="wrap_content" 
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:layout_below="@+id/tempString"
         android:textSize="8sp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"
          />
 </RelativeLayout>
  
