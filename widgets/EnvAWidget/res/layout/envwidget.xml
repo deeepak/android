@@ -3,7 +3,7 @@
     android:id="@+id/widgetFrame"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@drawable/dropshadow"
+    
     android:padding="2dip"
     >
 
@@ -15,17 +15,7 @@
     	android:layout_marginRight="5dip"
     	android:layout_alignParentTop="true"
         />
- <TextView
-     android:id="@+id/tempString"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-		android:textSize="12sp"
-		android:layout_below="@+id/tempIconView"
-		android:layout_alignStart="@+id/tempIconView"
-        android:text="@string/temperature"
-         />
+
     <TextView
         android:id="@+id/temp"
         android:layout_width="wrap_content" 
@@ -47,18 +37,7 @@
     	android:layout_marginRight="5dip"
     android:layout_toRightOf="@+id/temp"
        />
-<TextView
-      android:id="@+id/humidityString"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-		android:textSize="12sp"
-		android:layout_below="@+id/humidityIconView"
-		android:layout_alignStart="@+id/humidityIconView"
-		android:layout_alignEnd="@+id/humidity"
-        android:text="@string/humidity"
-         />
+
 <TextView
         android:id="@+id/humidity"
         android:layout_width="wrap_content" 
@@ -79,18 +58,7 @@
     	android:layout_marginRight="5dip"
     android:layout_toRightOf="@+id/humidity"
        />
-<TextView
-      android:id="@+id/dewPointString"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-		android:textSize="12sp"
-		android:layout_below="@+id/dewPointIconView"
-		android:layout_alignStart="@+id/dewPointIconView"
-		android:layout_alignEnd="@+id/dewPoint"
-        android:text="@string/dewpoint"
-         />
+
 <TextView
         android:id="@+id/dewPoint"
         android:layout_width="wrap_content" 
@@ -102,12 +70,33 @@
         android:textSize="18sp"
         android:text="@string/widget_loading"
          />
+<ImageView
+        android:id="@+id/pressureIconView"
+       android:layout_width="wrap_content"
+       android:layout_alignParentTop="true"
+    	android:layout_height="wrap_content"
+    	android:layout_marginLeft="10dip"
+    	android:layout_marginRight="5dip"
+    android:layout_toRightOf="@+id/dewPoint"
+       />
+
+<TextView
+        android:id="@+id/pressure"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:padding="2dip"
+        android:layout_marginTop="2dip"
+        android:gravity="center"
+        android:layout_toRightOf="@+id/pressureIconView"
+        android:textSize="18sp"
+        android:text="@string/widget_loading"
+         />
   <ImageView
         android:id="@+id/moodView"
         android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
-    	android:layout_marginLeft="10dip"
-    	android:layout_toRightOf="@+id/dewPoint"
+    	android:layout_marginLeft="5dip"
+    	android:layout_below="@+id/tempIconView"
     	android:layout_marginRight="5dip"
         />
   <TextView
@@ -116,10 +105,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dip"
         android:gravity="center"
-        android:layout_toRightOf="@+id/dewPointString"
-        android:layout_alignStart="@+id/moodView"
-    	android:layout_alignEnd="@+id/moodView"
-        android:layout_below="@+id/moodView"
+        android:layout_toRightOf="@+id/moodView"
+        android:layout_below="@+id/tempIconView"
         android:textSize="12sp"
          />
  
@@ -136,7 +123,7 @@
         android:layout_width="wrap_content" 
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:textSize="8sp"
+        android:textSize="10sp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
          />

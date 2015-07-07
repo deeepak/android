@@ -23,6 +23,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.PendingIntent;
 import android.app.Service;
@@ -148,10 +150,11 @@ public class EnvWidget extends AppWidgetProvider {
 		private SensorManager sensormanager = null;
 		private Sensor temperature = null;
 		private Sensor humidity = null;
-		private 
-		SharedPreferences SP;
+		private Sensor barometer = null;
+		private SharedPreferences SP;
 		private boolean isTempSensorAvailable = false;
 		private boolean isHumiditySensorAvailable = false;
+		private boolean isBarometerSensorAvailable  = false;
 		// By default unit is Celsius
 		private int tempUnit = 1;
 		// By default SENSOR_DELAY_NORMAL (3)
@@ -162,6 +165,7 @@ public class EnvWidget extends AppWidgetProvider {
 		private Context ctx ;
 		private double tempVal=0;
 		private double humidityVal=0;
+		private double pressureVal=0;
 		private double feelsLike=0;
 		private double dewpoint=0;
 		private  double[] HIConstants={-42.379,2.04901523,10.14333127,-0.22475541,
@@ -178,6 +182,8 @@ public class EnvWidget extends AppWidgetProvider {
 					.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
 			humidity = sensormanager
 					.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY);
+			barometer= sensormanager
+					.getDefaultSensor(Sensor.TYPE_PRESSURE);
 			thisWidget = new ComponentName(this, EnvWidget.class);
 			manager = AppWidgetManager.getInstance(this);
 			/* get the screen density
@@ -209,6 +215,9 @@ public class EnvWidget extends AppWidgetProvider {
 			if (!isHumiditySensorAvailable) {
 				views.setTextViewText(R.id.humidity, "NS");
 			}
+			if (!isBarometerSensorAvailable) {
+				views.setTextViewText(R.id.pressure, "NS");
+			}
 			buildUpdate(this, views, getString(R.string.thermicon),
 					R.id.tempIconView, 100, 200, 10, 215, (int) (50 * scale),
 					Color.WHITE);
@@ -218,10 +227,21 @@ public class EnvWidget extends AppWidgetProvider {
 			buildUpdate(this, views, getString(R.string.dewpointicon),
 					R.id.dewPointIconView, 110, 200, 10, 235,
 					(int) (50 * scale), Color.WHITE);
+			buildUpdate(this, views, getString(R.string.pressureicon),
+					R.id.pressureIconView, 150, 230, 0, 180, (int) (50 * scale),
+					Color.WHITE);
 			buildUpdate(this, views, getString(R.string.settingsicon),
 					R.id.settingsBtnView, 150, 230, 0, 180, (int) (30 * scale),
 					Color.GRAY);
+			
 			manager.updateAppWidget(manager.getAppWidgetIds(thisWidget), views);
+
+			/* AnimationThread at = new AnimationThread (this);
+			 
+			       Timer timer = new Timer ();
+			  timer.scheduleAtFixedRate (at, 1 , ( int ) ( 1000));     
+			
+			   */  
 
 			return super.onStartCommand(intent, flags, startId);
 		}
@@ -246,48 +266,62 @@ public class EnvWidget extends AppWidgetProvider {
 		@Override
 		public void onSensorChanged(SensorEvent arg0) {
 
-			
-			double curTempVal = 0;
-			double curHumidityVal = 0;
+			double sensorVal = 0;
 			boolean updateTempFlag = false;
 			boolean updateHumFlag = false;
-			views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
-			if (arg0.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE) {
-				curTempVal = arg0.values[0];
-				if ((int) tempVal != (int) curTempVal) {
-					tempVal = curTempVal;
-					updateTempFlag = true;
-				}
-			} else {
-				curHumidityVal = arg0.values[0];
-				if ((int) humidityVal != (int) curHumidityVal) {
-					humidityVal = curHumidityVal;
-					updateHumFlag = true;
-				}
+			boolean updatePressureFlag = false;
+			
+			switch (arg0.sensor.getType()){
+				case Sensor.TYPE_AMBIENT_TEMPERATURE:
+					sensorVal = arg0.values[0];
+					if ((int) tempVal != (int) sensorVal) {
+						tempVal = sensorVal;
+						updateTempFlag = true;
+					}
+					break;
+				case Sensor.TYPE_PRESSURE:
+					sensorVal = arg0.values[0];
+					if ((int) pressureVal != (int) sensorVal) {
+						pressureVal = sensorVal;
+						updatePressureFlag = true;
+					}
+					break;
+				case Sensor.TYPE_RELATIVE_HUMIDITY:
+					sensorVal = arg0.values[0];
+					if ((int) humidityVal != (int) sensorVal) {
+						humidityVal = sensorVal;
+						updateHumFlag = true;
+					}
+					break;
+					default :{
+					}
 			}
-
-			/*
+						/*
 			 * we should update only when there is a change
 			 */
+			if (updateTempFlag || updateHumFlag || updatePressureFlag) {
+				views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
+			}
 			if (updateTempFlag || updateHumFlag) {
-
+				
 				feelsLike = calculateHI(tempVal * 1.8000 + 32.00, humidityVal);
 				dewpoint = calculateDewPoint(tempVal, humidityVal);
+				
 				if (feelsLike > 23 && feelsLike < 26) {
 					// env is good
 					buildUpdate(this, views, getString(R.string.smile),
 							R.id.moodView, 185, 210, 10, 200,
-							(int) (50 * scale), Color.WHITE);
+							(int) (40 * scale), Color.WHITE);
 
 				} else if (feelsLike >= 26 && feelsLike < 30) {
 					buildUpdate(this, views, getString(R.string.neutral),
 							R.id.moodView, 185, 210, 10, 200,
-							(int) (50 * scale), Color.WHITE);
+							(int) (40 * scale), Color.WHITE);
 
 				} else if (feelsLike >= 30) {
 					buildUpdate(this, views, getString(R.string.sad),
 							R.id.moodView, 185, 210, 10, 200,
-							(int) (50 * scale), Color.WHITE);
+							(int) (40 * scale), Color.WHITE);
 				}
 
 				if (tempUnit == 1) {
@@ -304,13 +338,19 @@ public class EnvWidget extends AppWidgetProvider {
 							+ (int) Math.round(feelsLike * 1.8000 + 32.00)
 							+ dFrahn);
 					views.setTextViewText(R.id.dewPoint,
-							(int) Math.round(dewpoint* 1.8000 + 32.00) + dFrahn);
+							(int) Math.round(dewpoint * 1.8000 + 32.00)
+									+ dFrahn);
 				}
 				views.setTextViewText(R.id.humidity,
 						(int) Math.round(humidityVal) + "%");
-				
-				
-				
+			}
+			if (updatePressureFlag) {
+				// pressure changed
+				views.setTextViewText(R.id.pressure,
+						(int) Math.round(pressureVal) + "");
+			}
+
+			if (updateTempFlag || updateHumFlag || updatePressureFlag) {
 				Intent intent = new Intent(this, EnvWidget.class);
 				intent.setAction(CONFIG_CLICKED);
 				views.setOnClickPendingIntent(R.id.settingsBtnView,
@@ -322,6 +362,7 @@ public class EnvWidget extends AppWidgetProvider {
 				manager.partiallyUpdateAppWidget(
 						manager.getAppWidgetIds(thisWidget), views);
 			}
+
 		}
 
 		public void applySettings(SharedPreferences arg0) {
@@ -373,6 +414,7 @@ public class EnvWidget extends AppWidgetProvider {
 		public void unRegisterListener() {
 			sensormanager.unregisterListener(this, temperature);
 			sensormanager.unregisterListener(this, humidity);
+			sensormanager.unregisterListener(this, barometer);
 		}
 
 		public void registerListener(int delay) {
@@ -385,6 +427,11 @@ public class EnvWidget extends AppWidgetProvider {
 			if (humidity != null) {
 				isHumiditySensorAvailable = true;
 				sensormanager.registerListener(UpdateService.this, humidity,
+						delay);
+			}
+			if (barometer != null) {
+				isBarometerSensorAvailable = true;
+				sensormanager.registerListener(UpdateService.this, barometer,
 						delay);
 			}
 		}
@@ -437,7 +484,6 @@ public class EnvWidget extends AppWidgetProvider {
 				      myBitmap.getConfig();
 			myBitmap = myBitmap.copy(bitmapConfig, true);
 			Canvas myCanvas = new Canvas(myBitmap);
-			;
 			int m = (shadowWidth/2)-5;
 			int n = (int)(paint.getFontSpacing());
 			myCanvas.drawText(text,m,n, paint);
@@ -467,6 +513,71 @@ public class EnvWidget extends AppWidgetProvider {
 			dewPoint = tn*(a+b)/m-(a+b);
 			return dewPoint;
 		}
+		 private class AnimationThread extends TimerTask {
+		      
+		    private RemoteViews m_RemoteViews;
+		    private AppWidgetManager m_AppWidgetManager;
+		    private int m_AppWidgetId;
+		    Context ctx;
+		    int a=0;
+		    public AnimationThread(Context context) {
+		     ctx=context;
+		    }
+		    
+		    @Override 
+		    public void run() {
+		    	views = new RemoteViews(ctx.getPackageName(), R.layout.envwidget);
+		    	if(a==0)
+		    	{buildUpdate(ctx, views, getString(R.string.sad),
+						R.id.moodView, 185, 210, 10, 200,
+						(int) (50 * scale), Color.WHITE);
+		    	a=1;
+		    	}
+		    	else
+		    	{
+		    		buildUpdate(ctx, views, getString(R.string.happy),
+							R.id.moodView, 185, 210, 10, 200,
+							(int) (50 * scale), Color.WHITE);
+		    		a=0;
+		    	}
+		    	manager.partiallyUpdateAppWidget(
+						manager.getAppWidgetIds(thisWidget), views);
+		    	
+		    }
+		    public void buildUpdate(Context context, RemoteViews views,
+					String text, int viewId,int w1,int h1,int x,int y,int size,int color) {
+				int shadowWidth=25;
+				Paint paint = new Paint();
+				Typeface clock = Typeface.createFromAsset(context.getAssets(),
+						"fonts/weather.ttf");
+				paint.setAntiAlias(true);
+				paint.setSubpixelText(true);
+				paint.setTypeface(clock);
+				paint.setStyle(Paint.Style.FILL);
+				paint.setColor(color);
+				//setTextSizeForWidth(paint,w1,h1,text);
+				paint.setTextSize(size);
+				paint.setShadowLayer(5.0f, 10.0f, 10.0f, Color.BLACK);
+				Rect bounds = new Rect();
+				paint.getTextBounds(text, 0, text.length(), bounds);
+				paint.getFontSpacing();
+				Bitmap myBitmap = Bitmap.createBitmap(bounds.width()+shadowWidth/*shadow x+y*/, (int)(paint.getFontSpacing()+5),
+						Bitmap.Config.ARGB_8888);
+				android.graphics.Bitmap.Config bitmapConfig =
+					      myBitmap.getConfig();
+				myBitmap = myBitmap.copy(bitmapConfig, true);
+				Canvas myCanvas = new Canvas(myBitmap);
+				int m = (shadowWidth/2)-5;
+				int n = (int)(paint.getFontSpacing());
+				myCanvas.drawText(text,m,n, paint);
+				views.setImageViewBitmap(viewId, myBitmap);
+			}
+		    @Override
+		    public boolean cancel() {
+		      return super.cancel();
+		    }
+		  }           
+
 	}
 
 }

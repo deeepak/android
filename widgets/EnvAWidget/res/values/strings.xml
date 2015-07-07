@@ -13,6 +13,7 @@
     <string name="thermicon">&#xf055;</string>
     <string name="humidityicon">&#xf04e;</string>
     <string name="dewpointicon">&#xe610;</string>
+      <string name="pressureicon">&#xf0b1;</string>
     <string name="settingsicon">&#xe995;</string>
     
    <string name="happy">&#xe9df;</string>
