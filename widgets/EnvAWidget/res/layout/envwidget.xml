@@ -1,131 +1,166 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetFrame"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    
-    android:padding="2dip"
-    >
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/transp"
+    android:padding="@dimen/widget_padding"
+     >
+
+    <GridLayout
+        android:id="@+id/widgetGrid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="4"
+        android:horizontalSpacing="1dip"
+        android:rowCount="2"
+        android:layout_weight="1"
+        android:verticalSpacing="1dip" >
+
+        <ImageView
+            android:id="@+id/tempIconView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center"
+            android:layout_marginLeft="5dip"
+            android:layout_marginRight="5dip"
+            android:layout_row="0"
+            android:adjustViewBounds="true" />
+
+        <TextView
+            android:id="@+id/temp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_gravity="center"
+            android:layout_marginRight="10dip"
+            android:layout_row="0"
+            android:padding="1dip"
+            android:text="@string/widget_loading"
+            android:textColor="#ffffff"
+            android:textSize="18sp" />
+
+        <ImageView
+            android:id="@+id/humidityIconView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="2"
+            android:layout_gravity="center"
+            android:layout_marginLeft="5dip"
+            android:layout_marginRight="5dip"
+            android:layout_row="0"
+            android:adjustViewBounds="true" />
+
+        <TextView
+            android:id="@+id/humidity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="3"
+            android:layout_gravity="center"
+            android:layout_row="0"
+            android:padding="2dip"
+            android:textColor="#ffffff"
+            android:textSize="18sp" />
+
+        <ImageView
+            android:id="@+id/dewPointIconView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center"
+            android:layout_marginLeft="5dip"
+            android:layout_marginRight="5dip"
+            android:layout_row="1"
+            android:adjustViewBounds="true" />
+
+        <TextView
+            android:id="@+id/dewPoint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_gravity="center"
+            android:layout_marginRight="10dip"
+            android:layout_row="1"
+            android:padding="2dip"
+            android:text="@string/widget_loading"
+            android:textColor="#ffffff"
+            android:textSize="18sp" />
+
+        <ImageView
+            android:id="@+id/pressureIconView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="2"
+            android:layout_gravity="center"
+            android:layout_marginLeft="5dip"
+            android:layout_marginRight="5dip"
+            android:layout_row="1"
+            android:adjustViewBounds="true" />
+
+        <TextView
+            android:id="@+id/pressure"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="3"
+            android:layout_gravity="center"
+            android:layout_row="1"
+            android:padding="2dip"
+            android:text="@string/widget_loading"
+            android:textColor="#ffffff"
+            android:textSize="18sp" />
+    </GridLayout>
+
+    <GridLayout
+        android:id="@+id/widgetGrid1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/widgetGrid"
+        android:columnCount="1"
+        android:padding="2dip"
+        android:rowCount="3" >
+
+        <ImageView
+            android:id="@+id/moodView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            
+            android:layout_gravity="center"
+            android:layout_row="0" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center"
+           
+            android:layout_row="1"
+            android:text="@string/feels"
+            android:textColor="#ffffff"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/moodString"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center"
+          
+            android:layout_row="2"
+            android:textColor="#ffffff"
+            android:textSize="12sp" />
+    </GridLayout>
 
     <ImageView
-        android:id="@+id/tempIconView"
-        android:layout_width="wrap_content"
-    	android:layout_height="wrap_content"
-    	android:layout_marginLeft="5dip"
-    	android:layout_marginRight="5dip"
-    	android:layout_alignParentTop="true"
-        />
-
-    <TextView
-        android:id="@+id/temp"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:padding="2dip"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-		android:textSize="18sp"
-		android:layout_toRightOf="@+id/tempIconView"
-        android:text="@string/widget_loading"
-         />
-   
-<ImageView
-        android:id="@+id/humidityIconView"
-       android:layout_width="wrap_content"
-       android:layout_alignParentTop="true"
-    	android:layout_height="wrap_content"
-    	android:layout_marginLeft="10dip"
-    	android:layout_marginRight="5dip"
-    android:layout_toRightOf="@+id/temp"
-       />
-
-<TextView
-        android:id="@+id/humidity"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:padding="2dip"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-        android:layout_toRightOf="@+id/humidityIconView"
-        android:textSize="18sp"
-        android:text="@string/widget_loading"
-         />
- <ImageView
-        android:id="@+id/dewPointIconView"
-       android:layout_width="wrap_content"
-       android:layout_alignParentTop="true"
-    	android:layout_height="wrap_content"
-    	android:layout_marginLeft="10dip"
-    	android:layout_marginRight="5dip"
-    android:layout_toRightOf="@+id/humidity"
-       />
-
-<TextView
-        android:id="@+id/dewPoint"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:padding="2dip"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-        android:layout_toRightOf="@+id/dewPointIconView"
-        android:textSize="18sp"
-        android:text="@string/widget_loading"
-         />
-<ImageView
-        android:id="@+id/pressureIconView"
-       android:layout_width="wrap_content"
-       android:layout_alignParentTop="true"
-    	android:layout_height="wrap_content"
-    	android:layout_marginLeft="10dip"
-    	android:layout_marginRight="5dip"
-    android:layout_toRightOf="@+id/dewPoint"
-       />
-
-<TextView
-        android:id="@+id/pressure"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:padding="2dip"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-        android:layout_toRightOf="@+id/pressureIconView"
-        android:textSize="18sp"
-        android:text="@string/widget_loading"
-         />
-  <ImageView
-        android:id="@+id/moodView"
-        android:layout_width="wrap_content"
-    	android:layout_height="wrap_content"
-    	android:layout_marginLeft="5dip"
-    	android:layout_below="@+id/tempIconView"
-    	android:layout_marginRight="5dip"
-        />
-  <TextView
-        android:id="@+id/moodString"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dip"
-        android:gravity="center"
-        android:layout_toRightOf="@+id/moodView"
-        android:layout_below="@+id/tempIconView"
-        android:textSize="12sp"
-         />
- 
-  <ImageView
         android:id="@+id/settingsBtnView"
         android:layout_width="wrap_content"
-    	android:layout_height="wrap_content"
-    	android:layout_marginLeft="5dip"
-    	android:layout_alignParentRight="true"
-    	android:layout_alignParentBottom="true"
-        />
-  <TextView
-        android:id="@+id/lastUpdated"
-        android:layout_width="wrap_content" 
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textSize="10sp"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentBottom="true"
-         />
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="5dip" 
+       android:soundEffectsEnabled="true"
+      />
+
+   
 </RelativeLayout>
- 

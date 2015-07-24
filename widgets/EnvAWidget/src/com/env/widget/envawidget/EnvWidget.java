@@ -26,8 +26,10 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.BroadcastReceiver;
@@ -47,6 +49,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 
@@ -57,11 +60,32 @@ import android.widget.Toast;
 import 	android.os.PowerManager;
 
 public class EnvWidget extends AppWidgetProvider {
+	
+	@Override
+	public void onDeleted(Context context, int[] appWidgetIds) {
+		
+		for(int widgetId : appWidgetIds){
+		if(UpdateService.getObject()!=null){
+			Toast.makeText(context, "DeRegisteration",
+					Toast.LENGTH_LONG).show();
+			UpdateService.getObject(). deregisterWidget(widgetId);
+		}
+		}
+		/* remove hidden widgets */
+		AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+		AppWidgetHost appWidgetHost = new AppWidgetHost(context, 1); // for removing phantoms
+		int[] appWidgetIDs = appWidgetManager.getAppWidgetIds(new ComponentName(context, EnvWidget.class));
+		for (int i = 0; i < appWidgetIDs.length; i++) {
+		        appWidgetHost.deleteAppWidgetId(appWidgetIDs[i]);
+		}
+		super.onDeleted(context, appWidgetIds);
+	}
+
 	// configuration intent action when user click on the widget
 	private static final String CONFIG_CLICKED = "ConfigButtonClick";
 
 	/*
-	 * this method is invoked when first instance of widget is added to the home
+	 * This method is invoked when first instance of widget is added to the home
 	 * screen, dont forget to add the intent filter for this in manifest file
 	 * (non-Javadoc)
 	 * 
@@ -70,9 +94,9 @@ public class EnvWidget extends AppWidgetProvider {
 	 */
 	@Override
 	public void onEnabled(Context context) {
-
+		
+		WidgetData.checkAndStartService(context);
 		super.onEnabled(context);
-		context.startService(new Intent(context, UpdateService.class));
 	}
 
 	/*
@@ -88,7 +112,6 @@ public class EnvWidget extends AppWidgetProvider {
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager,
 			int[] appWidgetIds) {
 
-		super.onUpdate(context, appWidgetManager, appWidgetIds);
 		for(int widgetId : appWidgetIds){
 			RemoteViews remoteViews = new RemoteViews(context.getPackageName(),
 					R.layout.envwidget);
@@ -105,10 +128,32 @@ public class EnvWidget extends AppWidgetProvider {
 			 * important: we need to fire the updateAppWidget here after
 			 * setting the pending intent
 			 */
-		
+			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+			Bundle mAppWidgetOptions= appWidgetManager.getAppWidgetOptions( widgetId);
 			
-			appWidgetManager.updateAppWidget(widgetId, remoteViews);
+			int height = mAppWidgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+			if(height<=0){
+				height = prefs.getInt("height",0);
+			}
+			
+			if (UpdateService.getObject() != null) {
+				if (!UpdateService.getObject().registerWidget(context,
+						WidgetTypes.AllWidgets, EnvWidget.class,
+						R.layout.envwidget, widgetId,height)) {
+					Toast.makeText(context, "unable to add widget",
+							Toast.LENGTH_LONG).show();
+					}
+			}
+			if (height > 0) {
+				SharedPreferences.Editor editor = prefs.edit();
+				editor.putInt("height", height); // value to store
+				editor.commit();
+			}
+			//onAppWidgetOptionsChanged(context, appWidgetManager, widgetId, mAppWidgetOptions);
+			
+			//appWidgetManager.updateAppWidget(widgetId, remoteViews);
 		}
+		super.onUpdate(context, appWidgetManager, appWidgetIds);
 	}
 	
 	@Override
@@ -119,465 +164,95 @@ public class EnvWidget extends AppWidgetProvider {
 		 * stop the service when last instance of the widget is removed from the
 		 * home screen
 		 */
-		context.stopService(new Intent(context, UpdateService.class));
+		//context.stopService(new Intent(context, UpdateService.class));
+		Toast.makeText(context, "disabled",
+				Toast.LENGTH_LONG).show();
 	}
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		super.onReceive(context, intent);
+		
 		String intentAction = intent.getAction();
-
+		
 		if (CONFIG_CLICKED.equals(intentAction)) {
 			// remoteViews.setTextViewText(R.id.temp, "1");
 			Intent intent1 = new Intent(context, EnvActivity.class);
 			// need to set FLAG_ACTIVITY_NEW_TASK as we are starting an activity
 			// outside of an activity
-			
 			intent1.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
 					| Intent.FLAG_ACTIVITY_CLEAR_TOP
 					| Intent.FLAG_ACTIVITY_NEW_TASK);
+			AppWidgetManager appWidgetManager = AppWidgetManager
+					.getInstance(context);
+			int[] appWidgetIDs = appWidgetManager
+					.getAppWidgetIds(new ComponentName(context, EnvWidget.class));
+			RemoteViews remoteViews = new RemoteViews(context.getPackageName(),
+					R.layout.envwidget);
+			
+			/* create a click impact */
+			remoteViews.setInt(R.id.settingsBtnView, "setAlpha", 10);
+			appWidgetManager.partiallyUpdateAppWidget(appWidgetIDs, remoteViews);
 			context.startActivity(intent1);
-		}
-
-	}
-
-	public static class UpdateService extends Service implements
-			SensorEventListener,
-			SharedPreferences.OnSharedPreferenceChangeListener {
-		// init
-		private final String dCel ="\u2103";
-		private final String dFrahn ="\u2109";
-		private SensorManager sensormanager = null;
-		private Sensor temperature = null;
-		private Sensor humidity = null;
-		private Sensor barometer = null;
-		private SharedPreferences SP;
-		private boolean isTempSensorAvailable = false;
-		private boolean isHumiditySensorAvailable = false;
-		private boolean isBarometerSensorAvailable  = false;
-		// By default unit is Celsius
-		private int tempUnit = 1;
-		// By default SENSOR_DELAY_NORMAL (3)
-		private int upFreq = 3;
-		private RemoteViews views = null;
-		private ComponentName thisWidget = null;
-		private AppWidgetManager manager = null;
-		private Context ctx ;
-		private double tempVal=0;
-		private double humidityVal=0;
-		private double pressureVal=0;
-		private double feelsLike=0;
-		private double dewpoint=0;
-		private  double[] HIConstants={-42.379,2.04901523,10.14333127,-0.22475541,
-				-0.00683783,-0.05481717,0.00122874,0.00085282,-0.00000199};
-		boolean isSettingChanged =false;
-		private  float scale=0;
-		@Override
-		public void onCreate() {
-			super.onCreate();
-			SP = PreferenceManager
-					.getDefaultSharedPreferences(getBaseContext());
-			sensormanager = (SensorManager) getSystemService(SENSOR_SERVICE);
-			temperature = sensormanager
-					.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
-			humidity = sensormanager
-					.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY);
-			barometer= sensormanager
-					.getDefaultSensor(Sensor.TYPE_PRESSURE);
-			thisWidget = new ComponentName(this, EnvWidget.class);
-			manager = AppWidgetManager.getInstance(this);
-			/* get the screen density
-			 * 
-			 */
-			 scale = getResources().getDisplayMetrics().density;
-			/*
-			 * registering broadcast receiver for screen_on and screen_off
-			 * intents
-			 */
-			IntentFilter filter = new IntentFilter();
-			filter.addAction(Intent.ACTION_SCREEN_OFF);
-			filter.addAction(Intent.ACTION_SCREEN_ON);
-			registerReceiver(mReceiver, filter);
+			remoteViews.setInt(R.id.settingsBtnView, "setAlpha", 255);
+			appWidgetManager.partiallyUpdateAppWidget(appWidgetIDs, remoteViews);
 			
 		}
-
-		@Override
-		public int onStartCommand(Intent intent, int flags, int startId) {
-			registerListener(SensorManager.SENSOR_DELAY_NORMAL);
-			PreferenceManager.getDefaultSharedPreferences(this)
-					.registerOnSharedPreferenceChangeListener(this);
-			applySettings(SP);
-			ctx = this;
-			views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
-			if (!isTempSensorAvailable) {
-				views.setTextViewText(R.id.temp, "NS");
-			}
-			if (!isHumiditySensorAvailable) {
-				views.setTextViewText(R.id.humidity, "NS");
-			}
-			if (!isBarometerSensorAvailable) {
-				views.setTextViewText(R.id.pressure, "NS");
-			}
-			buildUpdate(this, views, getString(R.string.thermicon),
-					R.id.tempIconView, 100, 200, 10, 215, (int) (50 * scale),
-					Color.WHITE);
-			buildUpdate(this, views, getString(R.string.humidityicon),
-					R.id.humidityIconView, 110, 200, 10, 235,
-					(int) (50 * scale), Color.WHITE);
-			buildUpdate(this, views, getString(R.string.dewpointicon),
-					R.id.dewPointIconView, 110, 200, 10, 235,
-					(int) (50 * scale), Color.WHITE);
-			buildUpdate(this, views, getString(R.string.pressureicon),
-					R.id.pressureIconView, 150, 230, 0, 180, (int) (50 * scale),
-					Color.WHITE);
-			buildUpdate(this, views, getString(R.string.settingsicon),
-					R.id.settingsBtnView, 150, 230, 0, 180, (int) (30 * scale),
-					Color.GRAY);
-			
-			manager.updateAppWidget(manager.getAppWidgetIds(thisWidget), views);
-
-			/* AnimationThread at = new AnimationThread (this);
-			 
-			       Timer timer = new Timer ();
-			  timer.scheduleAtFixedRate (at, 1 , ( int ) ( 1000));     
-			
-			   */  
-
-			return super.onStartCommand(intent, flags, startId);
+		else if(intentAction.contentEquals("com.sec.android.widgetapp.APPWIDGET_RESIZE")){
+			handleTouchWiz(context, intent);
+			Toast.makeText(context, intentAction,
+					Toast.LENGTH_LONG).show();
 		}
+		else if (AppWidgetManager.ACTION_APPWIDGET_DELETED.equals(intentAction)) { 
+	        final int appWidgetId = intent.getIntExtra 
+	(AppWidgetManager.EXTRA_APPWIDGET_ID, 
+	                AppWidgetManager.INVALID_APPWIDGET_ID); 
+	        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) { 
+	            this.onDeleted(context, new int[] { appWidgetId }); 
+	        } 
+	    }
+		else if(intentAction.equals("com.env.widget.envawidget.start_registeration")){
+			WidgetData.checkAndStartService(context);
+			AppWidgetManager appWidgetManager = AppWidgetManager
+					.getInstance(context);
+			int[] appWidgetIDs = appWidgetManager
+					.getAppWidgetIds(new ComponentName(context, EnvWidget.class));
+			for (int widgetId : appWidgetIDs) {
 
-		@Override
-		public IBinder onBind(Intent intent) {
-			return null;
-		}
+				Bundle mAppWidgetOptions = appWidgetManager
+						.getAppWidgetOptions(widgetId);
 
-		@Override
-		public void onDestroy() {
-			super.onDestroy();
-			unRegisterListener();
-			unregisterReceiver(mReceiver);
-		}
-
-		@Override
-		public void onAccuracyChanged(Sensor arg0, int arg1) {
-
-		}
-
-		@Override
-		public void onSensorChanged(SensorEvent arg0) {
-
-			double sensorVal = 0;
-			boolean updateTempFlag = false;
-			boolean updateHumFlag = false;
-			boolean updatePressureFlag = false;
-			
-			switch (arg0.sensor.getType()){
-				case Sensor.TYPE_AMBIENT_TEMPERATURE:
-					sensorVal = arg0.values[0];
-					if ((int) tempVal != (int) sensorVal) {
-						tempVal = sensorVal;
-						updateTempFlag = true;
-					}
-					break;
-				case Sensor.TYPE_PRESSURE:
-					sensorVal = arg0.values[0];
-					if ((int) pressureVal != (int) sensorVal) {
-						pressureVal = sensorVal;
-						updatePressureFlag = true;
-					}
-					break;
-				case Sensor.TYPE_RELATIVE_HUMIDITY:
-					sensorVal = arg0.values[0];
-					if ((int) humidityVal != (int) sensorVal) {
-						humidityVal = sensorVal;
-						updateHumFlag = true;
-					}
-					break;
-					default :{
-					}
-			}
-						/*
-			 * we should update only when there is a change
-			 */
-			if (updateTempFlag || updateHumFlag || updatePressureFlag) {
-				views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
-			}
-			if (updateTempFlag || updateHumFlag) {
-				
-				feelsLike = calculateHI(tempVal * 1.8000 + 32.00, humidityVal);
-				dewpoint = calculateDewPoint(tempVal, humidityVal);
-				
-				if (feelsLike > 23 && feelsLike < 26) {
-					// env is good
-					buildUpdate(this, views, getString(R.string.smile),
-							R.id.moodView, 185, 210, 10, 200,
-							(int) (40 * scale), Color.WHITE);
-
-				} else if (feelsLike >= 26 && feelsLike < 30) {
-					buildUpdate(this, views, getString(R.string.neutral),
-							R.id.moodView, 185, 210, 10, 200,
-							(int) (40 * scale), Color.WHITE);
-
-				} else if (feelsLike >= 30) {
-					buildUpdate(this, views, getString(R.string.sad),
-							R.id.moodView, 185, 210, 10, 200,
-							(int) (40 * scale), Color.WHITE);
+				int height = mAppWidgetOptions
+						.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+				if (UpdateService.getObject() != null) {
+					UpdateService.getObject().registerWidget(context,
+							WidgetTypes.AllWidgets, EnvWidget.class,
+							R.layout.envwidget, widgetId, height);
 				}
 
-				if (tempUnit == 1) {
-					views.setTextViewText(R.id.temp, (int) Math.round(tempVal)
-							+ dCel);
-					views.setTextViewText(R.id.moodString, "Feels: "
-							+ (int) Math.round(feelsLike) + dCel);
-					views.setTextViewText(R.id.dewPoint,
-							(int) Math.round(dewpoint) + dCel);
-				} else {
-					views.setTextViewText(R.id.temp,
-							(int) Math.round(tempVal * 1.8000 + 32.00) + dFrahn);
-					views.setTextViewText(R.id.moodString, "Feels: "
-							+ (int) Math.round(feelsLike * 1.8000 + 32.00)
-							+ dFrahn);
-					views.setTextViewText(R.id.dewPoint,
-							(int) Math.round(dewpoint * 1.8000 + 32.00)
-									+ dFrahn);
-				}
-				views.setTextViewText(R.id.humidity,
-						(int) Math.round(humidityVal) + "%");
 			}
-			if (updatePressureFlag) {
-				// pressure changed
-				views.setTextViewText(R.id.pressure,
-						(int) Math.round(pressureVal) + "");
-			}
-
-			if (updateTempFlag || updateHumFlag || updatePressureFlag) {
-				Intent intent = new Intent(this, EnvWidget.class);
-				intent.setAction(CONFIG_CLICKED);
-				views.setOnClickPendingIntent(R.id.settingsBtnView,
-						PendingIntent.getBroadcast(this, 0, intent,
-								PendingIntent.FLAG_UPDATE_CURRENT));
-
-				views.setTextViewText(R.id.lastUpdated, DateFormat
-						.getDateTimeInstance().format(new Date()));
-				manager.partiallyUpdateAppWidget(
-						manager.getAppWidgetIds(thisWidget), views);
-			}
-
-		}
-
-		public void applySettings(SharedPreferences arg0) {
-
-			String tempU = arg0.getString("tempUnit", "1");
-			String upF = arg0.getString("upFreq", "3");
-			Settings[] type = {
-					new Settings(SType.TEMP_UNIT, new Integer(tempU)),
-					new Settings(SType.UP_FREQ, new Integer(upF)) };
-			for (int i = 0; i < type.length; i++) {
-				switch (type[i].getSType()) {
-				case TEMP_UNIT:
-					tempUnit = type[i].getVal();
-					break;
-				case UP_FREQ:
-					// De-register and Re-Register the sensors
-					unRegisterListener();
-					registerListener(type[i].getVal());
-					upFreq = type[i].getVal();
-					break;
-
-				}
-			}
-
-			views = new RemoteViews(this.getPackageName(), R.layout.envwidget);
-			if (tempUnit == 1) {
-				views.setTextViewText(R.id.temp, (int) Math.round(tempVal)
-						+ dCel);
-				views.setTextViewText(R.id.moodString,
-						"Feels: " + (int) Math.round(feelsLike) + dCel);
-				views.setTextViewText(R.id.dewPoint,
-						(int) Math.round(dewpoint) + dCel);
-			} else {
-				views.setTextViewText(R.id.temp,
-						(int) Math.round(tempVal * 1.8000 + 32.00) + dFrahn);
-				views.setTextViewText(
-						R.id.moodString,
-						"Feels: "
-								+ (int) Math.round(feelsLike * 1.8000 + 32.00)
-								+ dFrahn);
-				views.setTextViewText(R.id.dewPoint,
-						(int) Math.round(dewpoint* 1.8000 + 32.00) + dFrahn);
-			}
-			manager.partiallyUpdateAppWidget(
-					manager.getAppWidgetIds(thisWidget), views);
-
-		}
-
-		public void unRegisterListener() {
-			sensormanager.unregisterListener(this, temperature);
-			sensormanager.unregisterListener(this, humidity);
-			sensormanager.unregisterListener(this, barometer);
-		}
-
-		public void registerListener(int delay) {
-
-			if (temperature != null) {
-				isTempSensorAvailable = true;
-				sensormanager.registerListener(UpdateService.this, temperature,
-						delay);
-			}
-			if (humidity != null) {
-				isHumiditySensorAvailable = true;
-				sensormanager.registerListener(UpdateService.this, humidity,
-						delay);
-			}
-			if (barometer != null) {
-				isBarometerSensorAvailable = true;
-				sensormanager.registerListener(UpdateService.this, barometer,
-						delay);
-			}
-		}
-
-		@Override
-		public void onSharedPreferenceChanged(SharedPreferences arg0,
-				String arg1) {
-
-			applySettings(arg0);
-		}
-
-		private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				String intentAction = intent.getAction();
-				if ("android.intent.action.SCREEN_OFF".equals(intentAction)) {
-					// we are unregistering the sensors as device screen goes off
-					// to save the battery
-					unRegisterListener();
-				} else if ("android.intent.action.SCREEN_ON"
-						.equals(intentAction)) {
-					registerListener(new Integer(
-							(PreferenceManager
-									.getDefaultSharedPreferences(context)
-									.getString("upFreq", "3"))));
-				}
-			}
-		};
-
-		public void buildUpdate(Context context, RemoteViews views,
-				String text, int viewId,int w1,int h1,int x,int y,int size,int color) {
-			int shadowWidth=25;
-			Paint paint = new Paint();
-			Typeface clock = Typeface.createFromAsset(context.getAssets(),
-					"fonts/weather.ttf");
-			paint.setAntiAlias(true);
-			paint.setSubpixelText(true);
-			paint.setTypeface(clock);
-			paint.setStyle(Paint.Style.FILL);
-			paint.setColor(color);
-			//setTextSizeForWidth(paint,w1,h1,text);
-			paint.setTextSize(size);
-			paint.setShadowLayer(5.0f, 10.0f, 10.0f, Color.BLACK);
-			Rect bounds = new Rect();
-			paint.getTextBounds(text, 0, text.length(), bounds);
-			paint.getFontSpacing();
-			Bitmap myBitmap = Bitmap.createBitmap(bounds.width()+shadowWidth/*shadow x+y*/, (int)(paint.getFontSpacing()+5),
-					Bitmap.Config.ARGB_8888);
-			android.graphics.Bitmap.Config bitmapConfig =
-				      myBitmap.getConfig();
-			myBitmap = myBitmap.copy(bitmapConfig, true);
-			Canvas myCanvas = new Canvas(myBitmap);
-			int m = (shadowWidth/2)-5;
-			int n = (int)(paint.getFontSpacing());
-			myCanvas.drawText(text,m,n, paint);
-			views.setImageViewBitmap(viewId, myBitmap);
-		}
 		
-		private double calculateHI(double temp,double humidity){
-			double heatIndex = 0.0;
-			heatIndex = HIConstants[0]+ 
-						HIConstants[1]*temp+
-						HIConstants[2]*humidity+
-						HIConstants[3]*temp*humidity+
-						HIConstants[4]*temp*temp+
-						(HIConstants[5]*humidity)*humidity+
-						(HIConstants[6]*temp*temp)*humidity+
-						(HIConstants[7]*temp*humidity)*humidity+
-						(HIConstants[8]*temp*temp)*humidity*humidity;
-			heatIndex = (heatIndex-32.00)/1.800;
-			return heatIndex;
 		}
-		private double calculateDewPoint(double temp,double humidity){
-			double dewPoint = 0.0;
-			double m=17.62;
-			double tn= 243.12;
-			double a=Math.log(humidity/100);
-			double b=m*temp/(tn+temp);
-			dewPoint = tn*(a+b)/m-(a+b);
-			return dewPoint;
+		else{
+			super.onReceive(context, intent);
 		}
-		 private class AnimationThread extends TimerTask {
-		      
-		    private RemoteViews m_RemoteViews;
-		    private AppWidgetManager m_AppWidgetManager;
-		    private int m_AppWidgetId;
-		    Context ctx;
-		    int a=0;
-		    public AnimationThread(Context context) {
-		     ctx=context;
-		    }
-		    
-		    @Override 
-		    public void run() {
-		    	views = new RemoteViews(ctx.getPackageName(), R.layout.envwidget);
-		    	if(a==0)
-		    	{buildUpdate(ctx, views, getString(R.string.sad),
-						R.id.moodView, 185, 210, 10, 200,
-						(int) (50 * scale), Color.WHITE);
-		    	a=1;
-		    	}
-		    	else
-		    	{
-		    		buildUpdate(ctx, views, getString(R.string.happy),
-							R.id.moodView, 185, 210, 10, 200,
-							(int) (50 * scale), Color.WHITE);
-		    		a=0;
-		    	}
-		    	manager.partiallyUpdateAppWidget(
-						manager.getAppWidgetIds(thisWidget), views);
-		    	
-		    }
-		    public void buildUpdate(Context context, RemoteViews views,
-					String text, int viewId,int w1,int h1,int x,int y,int size,int color) {
-				int shadowWidth=25;
-				Paint paint = new Paint();
-				Typeface clock = Typeface.createFromAsset(context.getAssets(),
-						"fonts/weather.ttf");
-				paint.setAntiAlias(true);
-				paint.setSubpixelText(true);
-				paint.setTypeface(clock);
-				paint.setStyle(Paint.Style.FILL);
-				paint.setColor(color);
-				//setTextSizeForWidth(paint,w1,h1,text);
-				paint.setTextSize(size);
-				paint.setShadowLayer(5.0f, 10.0f, 10.0f, Color.BLACK);
-				Rect bounds = new Rect();
-				paint.getTextBounds(text, 0, text.length(), bounds);
-				paint.getFontSpacing();
-				Bitmap myBitmap = Bitmap.createBitmap(bounds.width()+shadowWidth/*shadow x+y*/, (int)(paint.getFontSpacing()+5),
-						Bitmap.Config.ARGB_8888);
-				android.graphics.Bitmap.Config bitmapConfig =
-					      myBitmap.getConfig();
-				myBitmap = myBitmap.copy(bitmapConfig, true);
-				Canvas myCanvas = new Canvas(myBitmap);
-				int m = (shadowWidth/2)-5;
-				int n = (int)(paint.getFontSpacing());
-				myCanvas.drawText(text,m,n, paint);
-				views.setImageViewBitmap(viewId, myBitmap);
-			}
-		    @Override
-		    public boolean cancel() {
-		      return super.cancel();
-		    }
-		  }           
 
 	}
+	@TargetApi(16)
+	private void handleTouchWiz(Context context, Intent intent) {
+	  AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 
+	  int appWidgetId = intent.getIntExtra("widgetId", 0);
+	  int widgetSpanX = intent.getIntExtra("widgetspanx", 0);
+	  int widgetSpanY = intent.getIntExtra("widgetspany", 0);
+
+	  if (appWidgetId > 0 && widgetSpanX > 0 && widgetSpanY > 0) {
+	     Bundle newOptions = new Bundle();
+	     // We have to convert these numbers for future use
+	     newOptions.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, widgetSpanY * 74);
+	     newOptions.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, widgetSpanX * 74);
+
+	     onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions);
+	  }
+	}
+	
 }

@@ -13,6 +13,12 @@
                       android:defaultValue="3"
                       android:entries="@array/listUpFreqArray"
                       android:entryValues="@array/listUpFreqValues" />
+  <ListPreference     android:title="Widget Background"
+                      android:summary="Select Background Color"
+                      android:key="backColor"
+                      android:defaultValue="transp"
+                      android:entries="@array/listBack"
+                      android:entryValues="@array/listBackValues" />
   
  
 </PreferenceScreen>

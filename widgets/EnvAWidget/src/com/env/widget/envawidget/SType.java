@@ -20,5 +20,5 @@
 package com.env.widget.envawidget;
 
 public enum SType {
-	TEMP_UNIT,UP_FREQ;
+	TEMP_UNIT,UP_FREQ,BACK_COLOR;
 }
